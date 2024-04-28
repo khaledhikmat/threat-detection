@@ -1,0 +1,21 @@
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: threat-detection-pubsub
+spec:
+  type: pubsub.redis
+  version: v1
+  metadata:
+  - name: redisHost
+    value: localhost:6379
+  - name: redisPassword
+    value: ""
+  # Do not include a consumer group so that the DAPR runtime sets it to APPID
+  - name: enableTLS
+    value: "false"
+scopes:
+  - threat-detection-camera-stream-capturer
+  - threat-detection-ccure-notifier
+  - threat-detection-clip-indexer
+  - threat-detection-model-invoker
+  - threat-detection-api

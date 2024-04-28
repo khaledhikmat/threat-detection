@@ -1,0 +1,36 @@
+version: 1
+common: # optional section for variables shared across apps
+  resourcesPath: deploy/local/components # any dapr resources to be shared across apps
+  env:  # any environment variable shared across apps
+    DEBUG: true
+apps:
+  - appID: threat-detection/camera-stream-capturer
+    appDirPath: ./camera-stream-capturer/
+    appPort: 8080
+    daprHTTPPort: 3500
+    logLevel: debug
+    command: ["go","run", "main.go"]
+  - appID: threat-detection-ccure-notifier
+    appDirPath: ./ccure-notifier/
+    appPort: 8081
+    daprHTTPPort: 3501
+    logLevel: debug
+    command: ["go","run", "main.go"]
+  - appID: threat-detection-clip-indexer
+    appDirPath: ./clip-indexer/
+    appPort: 8082
+    daprHTTPPort: 3502
+    logLevel: debug
+    command: ["go","run", "main.go"]
+  - appID: threat-detection-model-invoker
+    appDirPath: ./model-invoker/
+    appPort: 8083
+    daprHTTPPort: 3503
+    logLevel: debug
+    command: ["go","run", "main.go"]
+  - appID: threat-detection-api
+    appDirPath: ./api/
+    appPort: 3000
+    daprHTTPPort: 3510
+    logLevel: debug
+    command: ["go","run", "main.go"]
