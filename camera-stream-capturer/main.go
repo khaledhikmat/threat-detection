@@ -27,12 +27,6 @@ func main() {
 		panic(err)
 	}
 
-	// Print Kerberos.io ASCII art
-	utils.PrintASCIIArt()
-
-	// Print the environment variables which include "AGENT_" as prefix.
-	utils.PrintEnvironmentVariables()
-
 	// Read the config on start, and pass it to the other
 	// function and features. Please note that this might be changed
 	// when saving or updating the configuration through the REST api or MQTT handler.
@@ -46,9 +40,6 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-
-	// We will override the configuration with the environment variables
-	//configService.OverrideWithEnvironmentVariables(&configuration)
 
 	// Printing final configuration
 	utils.PrintConfiguration(&configuration)

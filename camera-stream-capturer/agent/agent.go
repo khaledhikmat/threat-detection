@@ -16,7 +16,7 @@ import (
 func Run(canxCtx context.Context, canxFn context.CancelFunc, configDir string, configuration *models.Configuration) error {
 	// We create a capture object, this will contain all the streaming clients.
 	// And allow us to extract media from within difference places in the agent.
-	capture := capture.Capture{
+	captureDevice := capture.Capture{
 		RTSPClient:    nil,
 		RTSPSubClient: nil,
 	}
@@ -54,10 +54,6 @@ func Run(canxCtx context.Context, canxFn context.CancelFunc, configDir string, c
 	cloudTimestamp.Store(int64(0))
 	communication.CloudTimestamp = &cloudTimestamp
 
-	return bootstrap(configDir, configuration, &communication, &capture)
-}
-
-func bootstrap(configDir string, configuration *models.Configuration, communication *models.Communication, captureDevice *capture.Capture) error {
 	fmt.Println("agent.bootstrap: creating processing threads.")
 	config := configuration.Config
 
@@ -118,16 +114,14 @@ func bootstrap(configDir string, configuration *models.Configuration, communicat
 		return err
 	}
 
-	go rtspClient.Start(*communication.Context, "main", queue, configuration, communication)
+	go rtspClient.Start(canxCtx, "main", queue, configuration, &communication)
 
 	// Main stream is connected and ready to go.
 	communication.MainStreamConnected = true
 
-	// Handle recording, will write an mp4 to disk.
-	go capture.HandleRecordStream(queue, configDir, configuration, communication, rtspClient)
-
-	// Handle Upload to cloud provider (Kerberos Hub, Kerberos Vault and others)
-	//go cloud.HandleUpload(configDir, configuration, communication)
+	// Capture stream and write mp4 clips to destination (i.e. disk, S3, etc).
+	//go capture.HandleRecordStream(queue, configDir, configuration, communication, rtspClient)
+	go CaptureStream(queue, configDir, configuration)
 
 	// If we reach this point, we have a working RTSP connection.
 	communication.CameraConnected = true
