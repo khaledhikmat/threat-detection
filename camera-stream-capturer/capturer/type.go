@@ -4,9 +4,6 @@ import (
 	"context"
 	"image"
 
-	"github.com/kerberos-io/agent/machinery/src/packets"
-
-	"github.com/khaledhikmat/threat-detection/shared/service/config"
 	"github.com/khaledhikmat/threat-detection/shared/service/soicat"
 )
 
@@ -16,20 +13,20 @@ type RTSPClient interface {
 	Connect(ctx context.Context) error
 
 	// Start the RTSP client, and start reading packets.
-	Start(ctx context.Context, queue *packets.Queue, cfgsvc config.IService, camera soicat.Camera) error
+	Start(ctx context.Context, errorsStream chan interface{}, packetsStream chan Packet, camera soicat.Camera) error
 
 	// Decode a packet into a image.
-	DecodePacket(pkt packets.Packet) (image.YCbCr, error)
+	DecodePacket(pkt Packet) (image.YCbCr, error)
 
 	// Decode a packet into a image.
-	DecodePacketRaw(pkt packets.Packet) (image.Gray, error)
+	DecodePacketRaw(pkt Packet) (image.Gray, error)
 
 	// Close the connection to the RTSP server.
 	Close() error
 
 	// Get a list of streams from the RTSP server.
-	GetStreams() ([]packets.Stream, error)
+	GetStreams() ([]Stream, error)
 
 	// Get a list of video streams from the RTSP server.
-	GetVideoStreams() ([]packets.Stream, error)
+	GetVideoStreams() ([]Stream, error)
 }

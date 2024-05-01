@@ -2,11 +2,12 @@ Threat detection experimentation to leverage [https://github.com/bluenviron/gort
 
 The MP4 video clips can then be stored on a Cloud storage such as Amazon S3. Each clip storage can trigger additional processing (cognitive or behavioral recognition) and possibly generate alerts.
 
+Please note that I borrowed some code from: [https://github.com/kerberos-io/agent/machinery](https://github.com/kerberos-io/agent/machinery)
+
 ```bash
 go mod init github.com/khaledhikmat/threat-detection/camera-stream-capturer
 go get -u github.com/joho/godotenv
 go get -u github.com/google/uuid
-go get -u github.com/kerberos-io/agent/machinery
 ```
 
 There are some additional dependencies on `C` bindings and libraries:

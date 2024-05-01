@@ -7,14 +7,12 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/kerberos-io/agent/machinery/src/packets"
 	"github.com/yapingcat/gomedia/go-mp4"
 
-	"github.com/khaledhikmat/threat-detection/shared/service/config"
 	"github.com/khaledhikmat/threat-detection/shared/service/soicat"
 )
 
-func CaptureStream(canxCtx context.Context, errorsStream chan interface{}, packetsStream chan packets.Packet, _ config.IService, camera soicat.Camera) {
+func CaptureStream(canxCtx context.Context, errorsStream chan interface{}, packetsStream chan Packet, camera soicat.Camera) {
 	var file *os.File
 	var myMuxer *mp4.Movmuxer
 	var videoTrack uint32
@@ -22,11 +20,12 @@ func CaptureStream(canxCtx context.Context, errorsStream chan interface{}, packe
 	// Get as many packets we need.
 	recordingStatus := "idle"
 	recordingStart := time.Now().Unix()
+	frames := 0
 
 	for {
 		select {
 		case <-canxCtx.Done():
-			fmt.Printf("CaptureStream context is cancelled")
+			fmt.Printf("CaptureStream context is cancelled\n")
 			return
 		case pkt := <-packetsStream:
 			if recordingStatus == "idle" {
@@ -61,7 +60,10 @@ func CaptureStream(canxCtx context.Context, errorsStream chan interface{}, packe
 						errorsStream <- fmt.Errorf("capturestream: %v", err.Error())
 					}
 
-					// Switch tp recording mode
+					// Reset the frames counter (header + 1st packet)
+					frames = 2
+
+					// Switch to recording mode
 					recordingStatus = "recording"
 				}
 			} else {
@@ -73,7 +75,10 @@ func CaptureStream(canxCtx context.Context, errorsStream chan interface{}, packe
 						errorsStream <- fmt.Errorf("capturestream: %v", err.Error())
 					}
 
-					fmt.Printf("CaptureStream: file save: %s\n", file.Name())
+					// Include the trailer
+					frames++
+
+					fmt.Printf("CaptureStream - file save: %s - frames: %d\n", file.Name(), frames)
 
 					// Close the file and cleanup muxer
 					file.Close()
@@ -87,6 +92,9 @@ func CaptureStream(canxCtx context.Context, errorsStream chan interface{}, packe
 					if err := myMuxer.Write(videoTrack, pkt.Data, ttime, ttime); err != nil {
 						errorsStream <- fmt.Errorf("capturestream: %v", err.Error())
 					}
+
+					// Add a video frame
+					frames++
 				}
 			}
 		}

@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/kerberos-io/agent/machinery/src/packets"
 	"github.com/khaledhikmat/threat-detection/shared/service/config"
 	"github.com/khaledhikmat/threat-detection/shared/service/soicat"
 )
@@ -62,13 +61,12 @@ func Run(canxCtx context.Context, cfgsvc config.IService, camera soicat.Camera) 
 	}()
 
 	// Create a packet stream
-	packetsStream := make(chan packets.Packet, 10)
+	packetsStream := make(chan Packet, 10)
 	defer close(packetsStream)
 
 	go func() {
-		err := rtspClient.Start(canxCtx, errorsStream, packetsStream, cfgsvc, camera)
+		err := rtspClient.Start(canxCtx, errorsStream, packetsStream, camera)
 		if err != nil {
-			// TODO: Send an error to stream
 			errorsStream <- fmt.Errorf("capturer.agent - starting an RSTP client failed: %v", err)
 			return
 		}
@@ -76,7 +74,7 @@ func Run(canxCtx context.Context, cfgsvc config.IService, camera soicat.Camera) 
 
 	// Capture stream and write mp4 clips to destination (i.e. disk, S3, etc).
 	go func() {
-		CaptureStream(canxCtx, errorsStream, packetsStream, cfgsvc, camera)
+		CaptureStream(canxCtx, errorsStream, packetsStream, camera)
 	}()
 
 	// Wait
