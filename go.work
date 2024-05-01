@@ -1,3 +1,6 @@
 go 1.22.2
 
-use ./camera-stream-capturer
+use (
+	./camera-stream-capturer
+	./shared
+)

@@ -1,4 +1,7 @@
 package config
 
-type Config struct {
+type Capturer struct {
+	MaxCameras         int    `json:"maxCameras"`
+	RecordingsFolder   string `json:"recordingsFolder"`
+	StorageDestination string `json:"storageDestination"`
 }

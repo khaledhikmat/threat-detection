@@ -2,20 +2,22 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/signal"
 	"time"
 
 	"github.com/joho/godotenv"
 
-	"github.com/kerberos-io/agent/machinery/src/models"
-	"github.com/kerberos-io/agent/machinery/src/utils"
+	"github.com/khaledhikmat/threat-detection/shared/service/config"
+	"github.com/khaledhikmat/threat-detection/shared/service/soicat"
 
-	"github.com/khaledhikmat/threat-detection/camera-stream-capturer/agent"
+	"github.com/khaledhikmat/threat-detection/camera-stream-capturer/capturer"
+	"github.com/khaledhikmat/threat-detection/camera-stream-capturer/internal/fsdata"
 )
+
+//TODO:
+// 1. Error Processor
 
 func main() {
 	rootCanx := context.Background()
@@ -27,32 +29,27 @@ func main() {
 		panic(err)
 	}
 
-	// Read the config on start, and pass it to the other
-	// function and features. Please note that this might be changed
-	// when saving or updating the configuration through the REST api or MQTT handler.
-	var configuration models.Configuration
-	configuration.Name = "my-camera-agent"
-	configuration.Port = "80" // not used
+	configData := fsdata.GetEmbeddedConfigData()
+	cfgsvc := config.New(configData)
+	soicatsvc := soicat.New()
 
-	// Open this configuration either from Kerberos Agent or Kerberos Factory.
-	var configDir = "."
-	err = readConfig(configDir, &configuration)
+	cameras, err := soicatsvc.UncapturedCameras()
 	if err != nil {
 		panic(err)
 	}
 
-	// Printing final configuration
-	utils.PrintConfiguration(&configuration)
-	fmt.Printf("RTSP URL: %s\n", configuration.Config.Capture.IPCamera.RTSP)
+	if len(cameras) == 0 {
+		panic(fmt.Errorf("No cameras"))
+	}
 
 	defer func() {
 		cancel()
 	}()
 
-	// Launch the agent
+	// TODO: Launch an agent for each camera
 	agentErr := make(chan error, 1)
 	go func() {
-		agentErr <- agent.Run(canxCtx, cancel, configDir, &configuration)
+		agentErr <- capturer.Run(canxCtx, cfgsvc, cameras[0])
 	}()
 
 	// Wait until agent exits or context is cancelled
@@ -70,20 +67,4 @@ func main() {
 			return
 		}
 	}
-}
-
-func readConfig(configDirectory string, configuration *models.Configuration) error {
-	jsonFile, err := os.Open(configDirectory + "/data/config/config.json")
-	if err != nil {
-		return err
-	}
-	defer jsonFile.Close()
-
-	byteValue, _ := ioutil.ReadAll(jsonFile)
-	err = json.Unmarshal(byteValue, configuration)
-	if err != nil {
-		return err
-	}
-
-	return nil
 }

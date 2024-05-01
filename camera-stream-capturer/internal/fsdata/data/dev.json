@@ -1,0 +1,7 @@
+{
+    "capturer": {
+        "maxCameras": 3,
+        "recordingsFolder": "./data/recordings",
+        "storageDestination": "s3"
+    } 
+}
