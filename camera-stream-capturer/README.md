@@ -19,23 +19,6 @@ brew install libav
 brew install ffmpeg
 ```
 
-## Enhancements
-
-- Every 5 seconds, emit a heartbeat signal that updates a key/value store to indicate whether the capturer is alive.
-- Upon startup, reach out to SOICAT to determine the cameras that are not being captured or the capturer expired (based on heartbeat).
-- Support multiple cameras.
-- Support random MP4 generation.
-- Support Dockerfile with dependencies. 
-- Support configuration:
-    - Maximum camera streams
-- Support SOICAT Enhancement to allow for camera/device capture attributes:
-    - Is Capture required?
-    - RTSP URL
-    - others
-
-- Queue to Go Pipeline
-- Try to not need the Kerberos agent
-- Abstract the 
 ## References
 
 - [Kerberos.io agent](https://github.com/kerberos-io/agent)
