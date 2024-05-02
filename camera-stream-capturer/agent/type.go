@@ -1,4 +1,4 @@
-package capturer
+package agent
 
 import (
 	"context"
@@ -20,6 +20,12 @@ type RTSPClient interface {
 
 	// Decode a packet into a image.
 	DecodePacketRaw(pkt Packet) (image.Gray, error)
+
+	// Pause the recordinhg/play to the RTSP server.
+	Pause() error
+
+	// Resume the recordinhg/play to the RTSP server.
+	Resume() error
 
 	// Close the connection to the RTSP server.
 	Close() error

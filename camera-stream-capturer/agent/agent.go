@@ -1,15 +1,20 @@
-package capturer
+package agent
 
 import (
 	"context"
 	"fmt"
 	"time"
 
-	"github.com/khaledhikmat/threat-detection/shared/service/config"
 	"github.com/khaledhikmat/threat-detection/shared/service/soicat"
 )
 
-func Run(canxCtx context.Context, cfgsvc config.IService, camera soicat.Camera) error {
+// There is one agent per camera. It is responsible for:
+// 1. Processing agent errors
+// 2. Starting RTSP client
+// 3. Capturing camera stream packets which produces MP4 video clips
+// 4. Transferring the video clips to a Cloud storage
+// 5. Listen to commands from the capturer to start, stop, pause and resume
+func Run(canxCtx context.Context, commandsStream chan string, capturer string, camera soicat.Camera) error {
 	// Currently only support H264 encoded cameras, this will change.
 	// Establishing the camera connection without backchannel if no substream
 	if camera.RtspURL == "" {
@@ -45,17 +50,21 @@ func Run(canxCtx context.Context, cfgsvc config.IService, camera soicat.Camera) 
 
 	// Create an error stream
 	errorsStream := make(chan interface{}, 10)
-	defer close(errorsStream)
 
 	// Run an error processor to capture agent errors
 	go func() {
+		defer close(errorsStream)
+
 		for {
 			select {
 			case <-canxCtx.Done():
-				fmt.Printf("agent %s error processor context cancelled\n", camera.Name)
+				fmt.Printf("capturer %s - agent %s error processor context cancelled\n", capturer, camera.Name)
 				return
 			case err := <-errorsStream:
-				fmt.Printf("agent %s error processed received from a downstream error: %v\n", camera.Name, err)
+				fmt.Printf("capturer %s - agent %s error processed received from a downstream error: %v\n", capturer, camera.Name, err)
+				// TODO: Agent errors can be sent to key/value storage
+				// where the key = capturer_camera_name_ts
+				// and the value = error.Error()
 			}
 		}
 	}()
@@ -67,7 +76,7 @@ func Run(canxCtx context.Context, cfgsvc config.IService, camera soicat.Camera) 
 	go func() {
 		err := rtspClient.Start(canxCtx, errorsStream, packetsStream, camera)
 		if err != nil {
-			errorsStream <- fmt.Errorf("capturer.agent - starting an RSTP client failed: %v", err)
+			errorsStream <- fmt.Errorf("Agent %s - starting an RSTP client failed: %v", camera.Name, err)
 			return
 		}
 	}()
@@ -81,10 +90,23 @@ func Run(canxCtx context.Context, cfgsvc config.IService, camera soicat.Camera) 
 	for {
 		select {
 		case <-canxCtx.Done():
-			fmt.Println("Agent context cancelled...existing!!!")
+			fmt.Printf("capturer %s - agent %s context cancelled...existing!!!\n", capturer, camera.Name)
 			return (canxCtx).Err()
+		case cmd := <-commandsStream:
+			fmt.Printf("capturer %s - agent %s - command %s\n", capturer, camera.Name, cmd)
+			if cmd == "Pause" {
+				err := rtspClient.Pause()
+				if err != nil {
+					errorsStream <- fmt.Errorf("Agent %s - pausing an RSTP client failed: %v", camera.Name, err)
+				}
+			} else if cmd == "Resume" {
+				err := rtspClient.Resume()
+				if err != nil {
+					errorsStream <- fmt.Errorf("Agent %s - resuming an RSTP client failed: %v", camera.Name, err)
+				}
+			}
 		case <-time.After(time.Duration(100 * time.Second)):
-			fmt.Println("Timeout....do something periodic here!!!")
+			fmt.Printf("capturer %s - agent %s timeout....do something periodic here!!!\n", capturer, camera.Name)
 		}
 	}
 }

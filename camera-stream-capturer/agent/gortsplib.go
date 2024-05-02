@@ -1,4 +1,4 @@
-package capturer
+package agent
 
 // #cgo pkg-config: libavcodec libavutil libswscale
 // #include <libavcodec/avcodec.h>
@@ -507,6 +507,18 @@ func (g *Golibrtsp) GetVideoStreams() ([]Stream, error) {
 		}
 	}
 	return videoStreams, nil
+}
+
+// Pause the recording to the RTSP server.
+func (g *Golibrtsp) Pause() error {
+	_, err := g.Client.Pause()
+	return err
+}
+
+// Resume the recording to the RTSP server.
+func (g *Golibrtsp) Resume() error {
+	_, err := g.Client.Play(nil)
+	return err
 }
 
 // Close the connection to the RTSP server.

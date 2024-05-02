@@ -1,6 +1,7 @@
 package soicat
 
 type IService interface {
-	UncapturedCameras() ([]Camera, error)
+	UpdateCamera(camera Camera) error
+	Cameras() ([]Camera, error)
 	Finalize()
 }
