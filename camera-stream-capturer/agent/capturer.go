@@ -7,12 +7,14 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/yapingcat/gomedia/go-mp4"
 
+	"github.com/khaledhikmat/threat-detection/shared/equates"
 	"github.com/khaledhikmat/threat-detection/shared/service/soicat"
 )
 
-func CaptureStream(canxCtx context.Context, errorsStream chan interface{}, packetsStream chan Packet, camera soicat.Camera) {
+func CaptureStream(canxCtx context.Context, errorsStream chan interface{}, packetsStream chan Packet, storageStream chan equates.RecordingClip, camera soicat.Camera) {
 	var file *os.File
 	var myMuxer *mp4.Movmuxer
 	var videoTrack uint32
@@ -82,6 +84,18 @@ func CaptureStream(canxCtx context.Context, errorsStream chan interface{}, packe
 
 					// Close the file and cleanup muxer
 					file.Close()
+
+					// Send the recording clip via the storage stream
+					storageStream <- equates.RecordingClip{
+						ID:             uuid.NewString(),
+						LocalReference: fmt.Sprintf("%s/%s", camera.RecordingsFolder, file.Name()),
+						CloudReference: "",
+						Capturer:       "",
+						Camera:         camera.Name,
+						Frames:         frames,
+					}
+
+					// Remove the file reference
 					file = nil
 
 					// Switch to idle mode

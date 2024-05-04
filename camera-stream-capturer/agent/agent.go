@@ -3,22 +3,44 @@ package agent
 import (
 	"context"
 	"fmt"
+	"io"
+	"math/rand"
+	"os"
 	"time"
 
+	dapr "github.com/dapr/go-sdk/client"
+	"github.com/google/uuid"
+
+	"github.com/khaledhikmat/threat-detection/shared/equates"
+	"github.com/khaledhikmat/threat-detection/shared/service/config"
 	"github.com/khaledhikmat/threat-detection/shared/service/soicat"
 )
 
-// There is one agent per camera. It is responsible for:
-// 1. Processing agent errors
-// 2. Starting RTSP client
-// 3. Capturing camera stream packets which produces MP4 video clips
-// 4. Transferring the video clips to a Cloud storage
-// 5. Listen to commands from the capturer to start, stop, pause and resume
-func Run(canxCtx context.Context, commandsStream chan string, capturer string, camera soicat.Camera) error {
-	// Currently only support H264 encoded cameras, this will change.
+// Injected DAPR client and other services
+var DaprClient dapr.Client
+
+func init() {
+	rand.Seed(time.Now().UnixNano())
+}
+
+// There is one agent per camera.
+func Run(canxCtx context.Context, configsvc config.IService, commandsStream chan string, capturer string, camera soicat.Camera) error {
+
+	// Create a recording stream
+	recordingStream := captureRecordingClip(canxCtx, configsvc)
+
+	if configsvc.GetCapturer().AgentMode == "streaming" {
+		return runStreaming(canxCtx, configsvc, recordingStream, commandsStream, capturer, camera)
+	}
+
+	return runFiles(canxCtx, configsvc, recordingStream, commandsStream, capturer, camera)
+}
+
+func runStreaming(canxCtx context.Context, configsvc config.IService, recordingStream chan equates.RecordingClip, commandsStream chan string, capturer string, camera soicat.Camera) error {
+	mode := "streaming"
 	// Establishing the camera connection without backchannel if no substream
 	if camera.RtspURL == "" {
-		return fmt.Errorf("no rtsp url found in config, please provide one")
+		return fmt.Errorf("capturer %s - agent %s mode %s: no rtsp url found in config, please provide one", capturer, camera.Name, mode)
 	}
 
 	rtspClient := NewRTSPClient(camera.RtspURL)
@@ -26,7 +48,7 @@ func Run(canxCtx context.Context, commandsStream chan string, capturer string, c
 
 	err := rtspClient.Connect(canxCtx)
 	if err != nil {
-		return fmt.Errorf("error connecting to rtsp stream: %v", err)
+		return fmt.Errorf("capturer %s - agent %s mode %s: error connecting to rtsp stream: %v", capturer, camera.Name, mode, err)
 	}
 
 	fmt.Printf("capturer.agent - opened RTSP stream: %s\n", camera.RtspURL)
@@ -34,7 +56,7 @@ func Run(canxCtx context.Context, commandsStream chan string, capturer string, c
 	// Get the video streams from the RTSP server.
 	videoStreams, err := rtspClient.GetVideoStreams()
 	if err != nil || len(videoStreams) == 0 {
-		return fmt.Errorf("capturer.agent: no video stream found, might be the wrong codec (we only support H264 for the moment)")
+		return fmt.Errorf("capturer %s - agent %s mode %s: no video stream found, might be the wrong codec (we only support H264 for the moment)", capturer, camera.Name, mode)
 	}
 
 	// Get the video stream from the RTSP server.
@@ -48,6 +70,92 @@ func Run(canxCtx context.Context, commandsStream chan string, capturer string, c
 	camera.CaptureWidth = width
 	camera.CaptureHeight = height
 
+	// Capture errors
+	errorsStream := captureErrors(canxCtx, capturer, camera, mode)
+
+	// Create a packet stream
+	packetsStream := make(chan Packet, 10)
+	defer close(packetsStream)
+
+	go func() {
+		err := rtspClient.Start(canxCtx, errorsStream, packetsStream, camera)
+		if err != nil {
+			errorsStream <- fmt.Errorf("capturer %s - agent %s mode %s - starting an RSTP client failed: %v", capturer, camera.Name, mode, err)
+			return
+		}
+	}()
+
+	// Capture stream and write mp4 clips to destination (i.e. disk, S3, etc).
+	go func() {
+		CaptureStream(canxCtx, errorsStream, packetsStream, recordingStream, camera)
+	}()
+
+	// Wait for cancellation, command or periodic timer
+	for {
+		select {
+		case <-canxCtx.Done():
+			fmt.Printf("capturer %s - agent %s context cancelled...existing!!!\n", capturer, camera.Name)
+			return (canxCtx).Err()
+		case cmd := <-commandsStream:
+			fmt.Printf("capturer %s - agent %s mode %s - command %s\n", capturer, camera.Name, mode, cmd)
+			if cmd == "Start" {
+				fmt.Printf("capturer %s - agent %s mode %s - start command processor\n", capturer, camera.Name, mode)
+			} else if cmd == "Stop" {
+				fmt.Printf("capturer %s - agent %s mode %s - stop command processor\n", capturer, camera.Name, mode)
+			} else if cmd == "Pause" {
+				fmt.Printf("capturer %s - agent %s mode %s - pause command processor\n", capturer, camera.Name, mode)
+				err := rtspClient.Pause()
+				if err != nil {
+					errorsStream <- fmt.Errorf("capturer %s - agent %s mode %s - pausing an RSTP client failed: %v", capturer, camera.Name, mode, err)
+				}
+			} else if cmd == "Resume" {
+				fmt.Printf("capturer %s - agent %s mode %s - resume command processor\n", capturer, camera.Name, mode)
+				err := rtspClient.Resume()
+				if err != nil {
+					errorsStream <- fmt.Errorf("capturer %s - agent %s mode %s - resuming an RSTP client failed: %v", capturer, camera.Name, mode, err)
+				}
+			}
+		case <-time.After(time.Duration(20 * time.Second)):
+			fmt.Printf("capturer %s - agent %s mode %s - timeout....perform periodic tasks...\n", capturer, camera.Name, mode)
+		}
+	}
+}
+
+func runFiles(canxCtx context.Context, configsvc config.IService, recordingStream chan equates.RecordingClip, commandsStream chan string, capturer string, camera soicat.Camera) error {
+	mode := "files"
+
+	// Capture errors
+	errorsStream := captureErrors(canxCtx, capturer, camera, mode)
+
+	// Wait for cancellation, command or periodic timer
+	for {
+		select {
+		case <-canxCtx.Done():
+			fmt.Printf("capturer %s - agent %s mode %s - context cancelled...existing!!!\n", capturer, camera.Name, mode)
+			return (canxCtx).Err()
+		case cmd := <-commandsStream:
+			fmt.Printf("capturer %s - agent %s mode %s - command %s\n", capturer, camera.Name, mode, cmd)
+			if cmd == "Start" {
+				fmt.Printf("capturer %s - agent %s mode %s - start command processor\n", capturer, camera.Name, mode)
+			} else if cmd == "Stop" {
+				fmt.Printf("capturer %s - agent %s mode %s - stop command processor\n", capturer, camera.Name, mode)
+			} else if cmd == "Pause" {
+				fmt.Printf("capturer %s - agent %s mode %s - pause command processor\n", capturer, camera.Name, mode)
+			} else if cmd == "Resume" {
+				fmt.Printf("capturer %s - agent %s mode %s - resume command processor\n", capturer, camera.Name, mode)
+			}
+		case <-time.After(time.Duration(3 * time.Second)):
+			fmt.Printf("capturer %s - agent %s mode %s - timeout....perform periodic tasks...\n", capturer, camera.Name, mode)
+
+			err := produceClip(recordingStream, configsvc.GetCapturer().SamplesFolder, camera.RecordingsFolder, capturer, camera)
+			if err != nil {
+				errorsStream <- fmt.Errorf("capturer %s - agent %s mode %s - uploading files: %v", capturer, camera.Name, mode, err)
+			}
+		}
+	}
+}
+
+func captureErrors(canxCtx context.Context, capturer string, camera soicat.Camera, mode string) chan interface{} {
 	// Create an error stream
 	errorsStream := make(chan interface{}, 10)
 
@@ -58,10 +166,10 @@ func Run(canxCtx context.Context, commandsStream chan string, capturer string, c
 		for {
 			select {
 			case <-canxCtx.Done():
-				fmt.Printf("capturer %s - agent %s error processor context cancelled\n", capturer, camera.Name)
+				fmt.Printf("capturer %s - agent %s mode %s - error processor context cancelled\n", capturer, camera.Name, mode)
 				return
 			case err := <-errorsStream:
-				fmt.Printf("capturer %s - agent %s error processed received from a downstream error: %v\n", capturer, camera.Name, err)
+				fmt.Printf("capturer %s - agent %s mode %s - error processed received from a downstream error: %v\n", capturer, camera.Name, mode, err)
 				// TODO: Agent errors can be sent to key/value storage
 				// where the key = capturer_camera_name_ts
 				// and the value = error.Error()
@@ -69,44 +177,88 @@ func Run(canxCtx context.Context, commandsStream chan string, capturer string, c
 		}
 	}()
 
-	// Create a packet stream
-	packetsStream := make(chan Packet, 10)
-	defer close(packetsStream)
+	return errorsStream
+}
+
+func captureRecordingClip(canxCtx context.Context, configsvc config.IService) chan equates.RecordingClip {
+	// Create a recording stream
+	recordingStream := make(chan equates.RecordingClip, 10)
 
 	go func() {
-		err := rtspClient.Start(canxCtx, errorsStream, packetsStream, camera)
-		if err != nil {
-			errorsStream <- fmt.Errorf("Agent %s - starting an RSTP client failed: %v", camera.Name, err)
-			return
-		}
-	}()
+		defer close(recordingStream)
 
-	// Capture stream and write mp4 clips to destination (i.e. disk, S3, etc).
-	go func() {
-		CaptureStream(canxCtx, errorsStream, packetsStream, camera)
-	}()
-
-	// Wait
-	for {
-		select {
-		case <-canxCtx.Done():
-			fmt.Printf("capturer %s - agent %s context cancelled...existing!!!\n", capturer, camera.Name)
-			return (canxCtx).Err()
-		case cmd := <-commandsStream:
-			fmt.Printf("capturer %s - agent %s - command %s\n", capturer, camera.Name, cmd)
-			if cmd == "Pause" {
-				err := rtspClient.Pause()
-				if err != nil {
-					errorsStream <- fmt.Errorf("Agent %s - pausing an RSTP client failed: %v", camera.Name, err)
+		// Recording processor
+		for {
+			select {
+			case <-canxCtx.Done():
+				fmt.Println("recording processor context cancelled...")
+				return
+			case recording := <-recordingStream:
+				fmt.Printf("recording processor file %s received\n", recording.LocalReference)
+				// TODO: Upload to S3
+				recording.CloudReference = recording.LocalReference
+				fmt.Printf("Uploading %s to S3\n", recording.CloudReference)
+				// Publish event
+				if configsvc.IsDapr() {
+					fmt.Printf("Publishing %s recording clip\n", recording.CloudReference)
+					err := DaprClient.PublishEvent(canxCtx, equates.ThreatDetectionPubSub, equates.RecordingsTopic, recording)
+					if err != nil {
+						fmt.Printf("unable to publish event: %s %v\n", recording.LocalReference, err)
+					}
 				}
-			} else if cmd == "Resume" {
-				err := rtspClient.Resume()
+				// Delete local file
+				fmt.Printf("Deleting %s from local\n", recording.LocalReference)
+				err := os.Remove(recording.LocalReference)
 				if err != nil {
-					errorsStream <- fmt.Errorf("Agent %s - resuming an RSTP client failed: %v", camera.Name, err)
+					fmt.Printf("unable to remove file: %s %v\n", recording.LocalReference, err)
 				}
 			}
-		case <-time.After(time.Duration(100 * time.Second)):
-			fmt.Printf("capturer %s - agent %s timeout....do something periodic here!!!\n", capturer, camera.Name)
 		}
+	}()
+
+	return recordingStream
+}
+
+func produceClip(recordingStream chan equates.RecordingClip, samplesFolder, recordingsFolder string, capturer string, camera soicat.Camera) error {
+	files, err := os.Open(samplesFolder)
+	if err != nil {
+		return fmt.Errorf("unable to open samples foler %s: %v", samplesFolder, err)
 	}
+	defer files.Close()
+
+	ffs, err := files.Readdir(-1) // read all the files
+	if err != nil {
+		return fmt.Errorf("unable to read sample files: %v", err)
+	}
+
+	// Pick random one
+	file := ffs[rand.Intn(len(ffs))]
+
+	source, err := os.Open(fmt.Sprintf("%s/%s", samplesFolder, file.Name()))
+	if err != nil {
+		return fmt.Errorf("unable to open source file: %s %v", file.Name(), err)
+	}
+	defer source.Close()
+
+	destination, err := os.Create(fmt.Sprintf("%s/%s_%s_%s_%s", recordingsFolder, capturer, camera.Name, uuid.New().String(), file.Name()))
+	if err != nil {
+		return fmt.Errorf("unable to create dest file: %s %v", file.Name(), err)
+	}
+
+	_, err = io.Copy(destination, source)
+	if err != nil {
+		return fmt.Errorf("unable to copy source %s to dest file %s: %v", source.Name(), destination.Name(), err)
+	}
+
+	// Send the recording clip via the storage stream
+	recordingStream <- equates.RecordingClip{
+		ID:             uuid.NewString(),
+		LocalReference: destination.Name(),
+		CloudReference: "",
+		Capturer:       capturer,
+		Camera:         camera.Name,
+		Frames:         0,
+	}
+
+	return nil
 }

@@ -24,8 +24,8 @@ dockerize: clean_dist clean_build test build
 	docker buildx build --platform linux/amd64 -t khaledhikmat/threat-detection-model-invoker:latest ./model-invoker -f ./model-invoker/Dockerfile
 	docker buildx build --platform linux/amd64 -t khaledhikmat/threat-detection-api:latest ./api-f ./api/Dockerfile
 
-start: clean_dist clean_build test build
-	dapr run -f .
+start: clean_dist clean_build test
+	export THREAT_DETECTION_MODE="dapr" && dapr run -f .
 
 list: 
 	dapr list

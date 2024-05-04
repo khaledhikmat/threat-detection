@@ -7,8 +7,10 @@ import (
 	"os/signal"
 	"time"
 
+	dapr "github.com/dapr/go-sdk/client"
 	"github.com/joho/godotenv"
 
+	"github.com/khaledhikmat/threat-detection/shared/equates"
 	"github.com/khaledhikmat/threat-detection/shared/service/capturer"
 	"github.com/khaledhikmat/threat-detection/shared/service/config"
 	"github.com/khaledhikmat/threat-detection/shared/service/soicat"
@@ -18,11 +20,11 @@ import (
 )
 
 // TODO:
-// 1. Need an API to command each agent: start, stop, pause, resume and pull stats, etc.
-// 2. Need to create a nested context to allow the stopping of agents.
+// - Need to create a nested context to allow the stopping of agents.
 var (
-	activeAgents  = 0
+	activeAgents  = 0 //TODO: Needs an atomic counter
 	agentCommands map[string]chan string
+	daprClient    dapr.Client
 )
 
 func main() {
@@ -43,6 +45,21 @@ func main() {
 	configsvc := config.New(configData)
 	soicatsvc := soicat.New()
 	capturersvc := capturer.New()
+
+	if configsvc.IsDapr() {
+		// Create a DAPR client
+		// Must be a global client since it is singleton
+		// Hence it would be injected in actor packages as needed
+		daprClient, err = dapr.NewClient()
+		if err != nil {
+			fmt.Println("Failed to start dapr client", err)
+			return
+		}
+		defer daprClient.Close()
+
+		// Inject dapr client in agents
+		agent.DaprClient = daprClient
+	}
 
 	// Run a discovery processor to grab camera agents
 	go func() {
@@ -69,13 +86,12 @@ func main() {
 
 						// Create a commands channels for agent
 						agentCommands[c.Name] = make(chan string)
-						commandsStream := agentCommands[c.Name]
 
 						go func() {
 							fmt.Printf("capturer %s discovery processor agent %s - starting....\n", capturerName, c.Name)
-							defer close(commandsStream)
+							defer close(agentCommands[c.Name])
 
-							agentErr := agent.Run(canxCtx, commandsStream, capturerName, c)
+							agentErr := agent.Run(canxCtx, configsvc, agentCommands[c.Name], capturerName, c)
 							if agentErr != nil {
 								fmt.Printf("capturer %s discovery processor agent: %s - start error: %v\n", capturerName, c.Name, agentErr)
 							}
@@ -105,9 +121,15 @@ func main() {
 		case <-time.After(time.Duration(20 * time.Second)):
 			fmt.Printf("capturer %s heartbeat processor timeout to send heartbeat....\n", capturerName)
 			// Send a heartbeat signal
-			// TODO: This will be in the form of key/val store
-			// where the key = capturer_name = pod name
-			// and the value = timestamp + number of agents
+			if configsvc.IsDapr() {
+				err := daprClient.SaveState(canxCtx,
+					equates.ThreatDetectionStateStore,
+					fmt.Sprintf("%s_%s", "heartbeat", capturerName),
+					[]byte(fmt.Sprintf("%s_%d", time.Now().UTC().Format("2006-01-02 15:04:05"), activeAgents)), nil)
+				if err != nil {
+					fmt.Printf("capturer %s heartbeat processor - error: %v\n", capturerName, err)
+				}
+			}
 		}
 	}
 }
