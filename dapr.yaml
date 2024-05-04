@@ -10,27 +10,27 @@ apps:
     daprHTTPPort: 3500
     logLevel: debug
     command: ["go","run", "main.go"]
+  - appID: threat-detection-model-invoker
+    appDirPath: ./model-invoker/
+    appPort: 8081
+    daprHTTPPort: 3501
+    logLevel: debug
+    command: ["go","run", "main.go"]
   # - appID: threat-detection-ccure-notifier
   #   appDirPath: ./ccure-notifier/
-  #   appPort: 8081
-  #   daprHTTPPort: 3501
-  #   logLevel: debug
-  #   command: ["go","run", "main.go"]
-  # - appID: threat-detection-clip-indexer
-  #   appDirPath: ./clip-indexer/
   #   appPort: 8082
   #   daprHTTPPort: 3502
   #   logLevel: debug
   #   command: ["go","run", "main.go"]
-  # - appID: threat-detection-model-invoker
-  #   appDirPath: ./model-invoker/
+  # - appID: threat-detection-clip-indexer
+  #   appDirPath: ./clip-indexer/
   #   appPort: 8083
   #   daprHTTPPort: 3503
   #   logLevel: debug
   #   command: ["go","run", "main.go"]
   # - appID: threat-detection-api
   #   appDirPath: ./api/
-  #   appPort: 3000
-  #   daprHTTPPort: 3510
+  #   appPort: 3004
+  #   daprHTTPPort: 3514
   #   logLevel: debug
   #   command: ["go","run", "main.go"]

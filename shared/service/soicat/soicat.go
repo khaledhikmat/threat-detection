@@ -19,7 +19,6 @@ var cameras = []Camera{
 		CaptureHeight:      500,
 		MaxLengthRecording: 3,
 		Timezone:           "",
-		RecordingsFolder:   "./data/recordings",
 	},
 }
 

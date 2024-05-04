@@ -15,7 +15,7 @@ spec:
     value: "false"
 scopes:
   - threat-detection-camera-stream-capturer
+  - threat-detection-model-invoker
   - threat-detection-ccure-notifier
   - threat-detection-clip-indexer
-  - threat-detection-model-invoker
   - threat-detection-api

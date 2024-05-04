@@ -16,5 +16,4 @@ type Camera struct {
 	PreRecording       int64     `json:"preRecording"`
 	MaxLengthRecording int64     `json:"maxLengthRecording"`
 	Timezone           string    `json:"timezone"`
-	RecordingsFolder   string    `json:"recordingsFolder"`
 }

@@ -11,10 +11,11 @@ import (
 	"github.com/yapingcat/gomedia/go-mp4"
 
 	"github.com/khaledhikmat/threat-detection/shared/equates"
+	"github.com/khaledhikmat/threat-detection/shared/service/config"
 	"github.com/khaledhikmat/threat-detection/shared/service/soicat"
 )
 
-func CaptureStream(canxCtx context.Context, errorsStream chan interface{}, packetsStream chan Packet, storageStream chan equates.RecordingClip, camera soicat.Camera) {
+func CaptureStream(canxCtx context.Context, configsvc config.IService, errorsStream chan interface{}, packetsStream chan Packet, storageStream chan equates.RecordingClip, camera soicat.Camera) {
 	var file *os.File
 	var myMuxer *mp4.Movmuxer
 	var videoTrack uint32
@@ -34,7 +35,7 @@ func CaptureStream(canxCtx context.Context, errorsStream chan interface{}, packe
 				// Start recording only when we receive a key frame packet
 				if pkt.IsVideo && pkt.IsKeyFrame {
 					recordingStart = time.Now().Unix()
-					fullName := fmt.Sprintf("%s/%s_%s.mp4", camera.RecordingsFolder, camera.Name, strconv.FormatInt(recordingStart, 10))
+					fullName := fmt.Sprintf("%s/%s_%s.mp4", configsvc.GetCapturer().RecordingsFolder, camera.Name, strconv.FormatInt(recordingStart, 10))
 
 					var err error
 					file, err = os.Create(fullName)
@@ -88,7 +89,7 @@ func CaptureStream(canxCtx context.Context, errorsStream chan interface{}, packe
 					// Send the recording clip via the storage stream
 					storageStream <- equates.RecordingClip{
 						ID:             uuid.NewString(),
-						LocalReference: fmt.Sprintf("%s/%s", camera.RecordingsFolder, file.Name()),
+						LocalReference: fmt.Sprintf("%s/%s", configsvc.GetCapturer().RecordingsFolder, file.Name()),
 						CloudReference: "",
 						Capturer:       "",
 						Camera:         camera.Name,

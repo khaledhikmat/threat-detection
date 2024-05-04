@@ -46,7 +46,7 @@ func main() {
 	soicatsvc := soicat.New()
 	capturersvc := capturer.New()
 
-	if configsvc.IsDapr() {
+	if configsvc.IsDapr() || configsvc.IsDiagrid() {
 		// Create a DAPR client
 		// Must be a global client since it is singleton
 		// Hence it would be injected in actor packages as needed
@@ -121,7 +121,7 @@ func main() {
 		case <-time.After(time.Duration(20 * time.Second)):
 			fmt.Printf("capturer %s heartbeat processor timeout to send heartbeat....\n", capturerName)
 			// Send a heartbeat signal
-			if configsvc.IsDapr() {
+			if configsvc.IsDapr() || configsvc.IsDiagrid() {
 				err := daprClient.SaveState(canxCtx,
 					equates.ThreatDetectionStateStore,
 					fmt.Sprintf("%s_%s", "heartbeat", capturerName),

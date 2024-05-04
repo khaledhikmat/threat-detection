@@ -8,6 +8,9 @@ Please note that I borrowed some code from: [https://github.com/kerberos-io/agen
 go mod init github.com/khaledhikmat/threat-detection/camera-stream-capturer
 go get -u github.com/joho/godotenv
 go get -u github.com/google/uuid
+go get -u github.com/dapr/go-sdk
+go get -u github.com/mitchellh/mapstructure
+
 ```
 
 There are some additional dependencies on `C` bindings and libraries:

@@ -87,7 +87,7 @@ func runStreaming(canxCtx context.Context, configsvc config.IService, recordingS
 
 	// Capture stream and write mp4 clips to destination (i.e. disk, S3, etc).
 	go func() {
-		CaptureStream(canxCtx, errorsStream, packetsStream, recordingStream, camera)
+		CaptureStream(canxCtx, configsvc, errorsStream, packetsStream, recordingStream, camera)
 	}()
 
 	// Wait for cancellation, command or periodic timer
@@ -147,7 +147,7 @@ func runFiles(canxCtx context.Context, configsvc config.IService, recordingStrea
 		case <-time.After(time.Duration(3 * time.Second)):
 			fmt.Printf("capturer %s - agent %s mode %s - timeout....perform periodic tasks...\n", capturer, camera.Name, mode)
 
-			err := produceClip(recordingStream, configsvc.GetCapturer().SamplesFolder, camera.RecordingsFolder, capturer, camera)
+			err := produceClip(recordingStream, configsvc.GetCapturer().SamplesFolder, configsvc.GetCapturer().RecordingsFolder, capturer, camera)
 			if err != nil {
 				errorsStream <- fmt.Errorf("capturer %s - agent %s mode %s - uploading files: %v", capturer, camera.Name, mode, err)
 			}
@@ -199,7 +199,7 @@ func captureRecordingClip(canxCtx context.Context, configsvc config.IService) ch
 				recording.CloudReference = recording.LocalReference
 				fmt.Printf("Uploading %s to S3\n", recording.CloudReference)
 				// Publish event
-				if configsvc.IsDapr() {
+				if configsvc.IsDapr() || configsvc.IsDiagrid() {
 					fmt.Printf("Publishing %s recording clip\n", recording.CloudReference)
 					err := DaprClient.PublishEvent(canxCtx, equates.ThreatDetectionPubSub, equates.RecordingsTopic, recording)
 					if err != nil {
