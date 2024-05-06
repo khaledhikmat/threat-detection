@@ -28,7 +28,7 @@ start-dapr: clean_dist clean_build test
 	export THREAT_DETECTION_MODE="dapr" && dapr run -f .
 
 start-diagrid: clean_dist clean_build test
-	export THREAT_DETECTION_MODE="diagrid" && dapr run -f .
+	export THREAT_DETECTION_MODE="diagrid" && diagrid dev start -f dev-eagle-threat-detection.yaml
 
 list: 
 	dapr list
@@ -46,12 +46,4 @@ stop-dapr:
 
 
 stop-diagrid: 
-	./stop-diagrid.sh
-	# For some reason, the awk command is not working in makefile
-	# Ignore errors by placing `-` at the beginning of the line	
-	# -dapr stop -f .
-	# -(lsof -i:8080 | grep main) | awk '{print $2}' | xargs kill
-	# -(lsof -i:8081 | grep main) | awk '{print $2}' | xargs kill
-	# -(lsof -i:8082 | grep main) | awk '{print $2}' | xargs kill
-	# -(lsof -i:8083 | grep main) | awk '{print $2}' | xargs kill
-	# -(lsof -i:3000 | grep main) | awk '{print $2}' | xargs kill
+	diagrid dev stop -f dev-eagle-threat-detection.yaml

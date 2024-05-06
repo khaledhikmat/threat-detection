@@ -50,14 +50,9 @@ func main() {
 		return
 	}
 
-	var s common.Service
-	if configsvc.IsDapr() {
-		// Create a DAPR service using a hard-coded port (must match make start)
-		s = daprd.NewService(":8081")
-		fmt.Println("DAPR Service created!")
-	}
-
 	var c dapr.Client
+	var s common.Service
+
 	if configsvc.IsDapr() || configsvc.IsDiagrid() {
 		// Create a DAPR client
 		// Must be a global client since it is singleton
@@ -69,9 +64,11 @@ func main() {
 		}
 		daprclient = c
 		defer daprclient.Close()
-	}
 
-	if configsvc.IsDapr() {
+		// Create a DAPR service using a hard-coded port (must match make start)
+		s = daprd.NewService(":8081")
+		fmt.Println("DAPR Service created!")
+
 		// Register pub/sub campaigns handlers
 		if err := s.AddTopicEventHandler(recordingsTopicSubscription, recordingsHandler); err != nil {
 			panic(err)
@@ -96,8 +93,8 @@ func recordingsHandler(_ context.Context, e *common.TopicEvent) (retry bool, err
 			return
 		}
 
-		fmt.Printf("Received a recording clip from CAPTURER %s and AGENT %s\n",
-			evt.Capturer, evt.Camera)
+		fmt.Printf("Received a recording clip %s from CAPTURER %s and AGENT %s\n",
+			evt.LocalReference, evt.Capturer, evt.Camera)
 	}()
 
 	return false, nil
