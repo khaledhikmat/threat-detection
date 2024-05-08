@@ -30,7 +30,7 @@ apps:
   #   command: ["go","run", "main.go"]
   # - appID: threat-detection-api
   #   appDirPath: ./api/
-  #   appPort: 3004
-  #   daprHTTPPort: 3514
+  #   appPort: 3000
+  #   daprHTTPPort: 3504
   #   logLevel: debug
   #   command: ["go","run", "main.go"]
