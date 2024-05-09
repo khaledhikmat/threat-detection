@@ -9,4 +9,4 @@
 **/vendor
 **/data/recordings
 **/data/samples
-/shared
+/threat-detection-shared

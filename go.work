@@ -3,5 +3,5 @@ go 1.22.2
 use (
 	./camera-stream-capturer
 	./model-invoker
-	./shared
+	./threat-detection-shared
 )
