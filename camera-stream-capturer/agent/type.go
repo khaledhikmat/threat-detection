@@ -4,7 +4,7 @@ import (
 	"context"
 	"image"
 
-	"github.com/khaledhikmat/threat-detection/shared/service/soicat"
+	"github.com/khaledhikmat/threat-detection-shared/service/soicat"
 )
 
 // RTSPClient is a interface that abstracts the RTSP client implementation.

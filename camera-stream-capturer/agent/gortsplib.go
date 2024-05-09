@@ -24,7 +24,7 @@ import (
 	"github.com/bluenviron/gortsplib/v4/pkg/format/rtph265"
 	"github.com/bluenviron/mediacommon/pkg/codecs/h264"
 	"github.com/bluenviron/mediacommon/pkg/codecs/h265"
-	"github.com/khaledhikmat/threat-detection/shared/service/soicat"
+	"github.com/khaledhikmat/threat-detection-shared/service/soicat"
 	"github.com/pion/rtp"
 )
 

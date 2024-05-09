@@ -10,9 +10,9 @@ import (
 	"github.com/google/uuid"
 	"github.com/yapingcat/gomedia/go-mp4"
 
-	"github.com/khaledhikmat/threat-detection/shared/equates"
-	"github.com/khaledhikmat/threat-detection/shared/service/config"
-	"github.com/khaledhikmat/threat-detection/shared/service/soicat"
+	"github.com/khaledhikmat/threat-detection-shared/equates"
+	"github.com/khaledhikmat/threat-detection-shared/service/config"
+	"github.com/khaledhikmat/threat-detection-shared/service/soicat"
 )
 
 func CaptureStream(canxCtx context.Context, configsvc config.IService, errorsStream chan interface{}, packetsStream chan Packet, storageStream chan equates.RecordingClip, camera soicat.Camera) {

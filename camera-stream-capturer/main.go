@@ -10,10 +10,10 @@ import (
 	dapr "github.com/dapr/go-sdk/client"
 	"github.com/joho/godotenv"
 
-	"github.com/khaledhikmat/threat-detection/shared/equates"
-	"github.com/khaledhikmat/threat-detection/shared/service/capturer"
-	"github.com/khaledhikmat/threat-detection/shared/service/config"
-	"github.com/khaledhikmat/threat-detection/shared/service/soicat"
+	"github.com/khaledhikmat/threat-detection-shared/equates"
+	"github.com/khaledhikmat/threat-detection-shared/service/capturer"
+	"github.com/khaledhikmat/threat-detection-shared/service/config"
+	"github.com/khaledhikmat/threat-detection-shared/service/soicat"
 
 	"github.com/khaledhikmat/threat-detection/camera-stream-capturer/agent"
 	"github.com/khaledhikmat/threat-detection/camera-stream-capturer/internal/fsdata"

@@ -8,7 +8,7 @@ import (
 	"os/signal"
 
 	"github.com/joho/godotenv"
-	"github.com/khaledhikmat/threat-detection/shared/equates"
+	"github.com/khaledhikmat/threat-detection-shared/equates"
 
 	"github.com/mitchellh/mapstructure"
 
@@ -16,8 +16,8 @@ import (
 	"github.com/dapr/go-sdk/service/common"
 	daprd "github.com/dapr/go-sdk/service/http"
 
+	"github.com/khaledhikmat/threat-detection-shared/service/config"
 	"github.com/khaledhikmat/threat-detection/model-invoker/internal/fsdata"
-	"github.com/khaledhikmat/threat-detection/shared/service/config"
 )
 
 var recordingsTopicSubscription = &common.Subscription{
