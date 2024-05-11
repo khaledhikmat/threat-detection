@@ -40,8 +40,8 @@ export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:/usr/lib/x86_64-linux-gnu/pkconfig
 pkg-config --cflags -- libavcodec libavutil libswscale
 # https://github.com/opencv/opencv/issues/5930
 .pc files must be created manually using vim
-sudo apt-get install libavcodec-dev
-sudo apt-get install libswscale-dev
+sudo apt-get install libavcodec-dev #asked copilot
+sudo apt-get install libswscale-dev #asked copilot
 ```
 
 ## References
