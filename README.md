@@ -43,3 +43,35 @@ diagrid subscription get recordings-pubsub --project eagle-threat-detection
 ```bash
 diagrid subscription delete recordings-pubsub
 ```
+
+To run locallY using one terminal session:
+
+```bash
+make start-diagrid
+```
+To stop a locallY running instance using another terminal session:
+
+```bash
+./stop-diagrid
+```
+
+## DAPR
+
+Start Local REDIS container:
+
+```bash
+docker exec -it dapr_redis redis-cli
+```
+
+To run locallY using one terminal session:
+
+```bash
+make start-dapr
+```
+To stop a locallY running instance using another terminal session:
+
+```bash
+./stop-dapr
+```
+
+
