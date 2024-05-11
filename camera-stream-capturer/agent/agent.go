@@ -14,6 +14,7 @@ import (
 	"github.com/khaledhikmat/threat-detection-shared/equates"
 	"github.com/khaledhikmat/threat-detection-shared/service/config"
 	"github.com/khaledhikmat/threat-detection-shared/service/soicat"
+	"github.com/khaledhikmat/threat-detection-shared/utils"
 )
 
 // Injected DAPR client and other services
@@ -25,6 +26,12 @@ func init() {
 
 // There is one agent per camera.
 func Run(canxCtx context.Context, configsvc config.IService, commandsStream chan string, capturer string, camera soicat.Camera) error {
+
+	// Create a cemra folder within the recordings folder if not exist
+	err := utils.CreateDirIfNotExist(fmt.Sprintf("%s/%s", configsvc.GetCapturer().RecordingsFolder, camera.Name))
+	if err != nil {
+		return fmt.Errorf("unable to create a folder: %s/%s - error: %v", configsvc.GetCapturer().RecordingsFolder, camera.Name, err)
+	}
 
 	// Create a recording stream
 	recordingStream := captureRecordingClip(canxCtx, configsvc)
@@ -240,7 +247,7 @@ func produceClip(recordingStream chan equates.RecordingClip, samplesFolder, reco
 	}
 	defer source.Close()
 
-	destination, err := os.Create(fmt.Sprintf("%s/%s_%s_%s_%s", recordingsFolder, capturer, camera.Name, uuid.New().String(), file.Name()))
+	destination, err := os.Create(fmt.Sprintf("%s/%s/%s_%s_%s", recordingsFolder, camera.Name, capturer, uuid.New().String(), file.Name()))
 	if err != nil {
 		return fmt.Errorf("unable to create dest file: %s %v", file.Name(), err)
 	}

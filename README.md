@@ -18,7 +18,19 @@ go work edit -dropuse ./ccure-notifier
 
 ## Diagrid
 
-Diagrid need a declarative way to specify:
+Generate an API Key
+
+```bash
+diagrid apikeys create --name mykey --role cra.diagrid:admin
+```
+
+Use the generated API Key when HSS remoted:
+
+```bash
+diagrid login --api-key <mykey>
+```
+
+Diagrid needs a declarative subscription to properly route pub/sub events to consumers:
 
 ```bash
 diagrid subscription create recordings-pubsub --connection threat-detection-pubsub  --topic recordings-topic --route /recordings-topic --scopes model-invoker

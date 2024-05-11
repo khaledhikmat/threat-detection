@@ -35,7 +35,7 @@ func CaptureStream(canxCtx context.Context, configsvc config.IService, errorsStr
 				// Start recording only when we receive a key frame packet
 				if pkt.IsVideo && pkt.IsKeyFrame {
 					recordingStart = time.Now().Unix()
-					fullName := fmt.Sprintf("%s/%s_%s.mp4", configsvc.GetCapturer().RecordingsFolder, camera.Name, strconv.FormatInt(recordingStart, 10))
+					fullName := fmt.Sprintf("%s/%s/%s.mp4", configsvc.GetCapturer().RecordingsFolder, camera.Name, strconv.FormatInt(recordingStart, 10))
 
 					var err error
 					file, err = os.Create(fullName)
@@ -89,7 +89,7 @@ func CaptureStream(canxCtx context.Context, configsvc config.IService, errorsStr
 					// Send the recording clip via the storage stream
 					storageStream <- equates.RecordingClip{
 						ID:             uuid.NewString(),
-						LocalReference: fmt.Sprintf("%s/%s", configsvc.GetCapturer().RecordingsFolder, file.Name()),
+						LocalReference: fmt.Sprintf("%s/%s/%s", configsvc.GetCapturer().RecordingsFolder, camera.Name, file.Name()),
 						CloudReference: "",
 						Capturer:       "",
 						Camera:         camera.Name,

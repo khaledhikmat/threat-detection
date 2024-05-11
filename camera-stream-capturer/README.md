@@ -15,11 +15,33 @@ go get -u github.com/mitchellh/mapstructure
 
 There are some additional dependencies on `C` bindings and libraries:
 
+## MacOS
+
 ```bash
 brew install gcc
 brew install pkg-config
 brew install libav
 brew install ffmpeg
+```
+
+## Ubuntu
+
+```bash
+sudo apt update
+sudo apt apt-file
+sudo apt install build-essential
+gcc --version
+sudo apt install ffmpeg
+ffmpeg -version
+dpkg -L ffmpeg # to find out where it installed the libs
+apt-file update
+apt-file search libavcodec.pc
+export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:/usr/lib/x86_64-linux-gnu/pkconfig
+pkg-config --cflags -- libavcodec libavutil libswscale
+# https://github.com/opencv/opencv/issues/5930
+.pc files must be created manually using vim
+sudo apt-get install libavcodec-dev
+sudo apt-get install libswscale-dev
 ```
 
 ## References
