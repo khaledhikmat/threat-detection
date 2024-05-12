@@ -5,5 +5,16 @@
         "recordingsFolder": "./data/recordings",
         "samplesFolder": "./data/samples",
         "storageDestination": "s3"
-    } 
+    },
+    "storageProvider": "aws",
+    "cloudStorageProviders": {
+        "aws": {
+            "accessKeyEnvVar": "aws_s3_access_key",
+            "accessKey": "your access key here"
+        },
+        "azure": {
+            "accessKeyEnvVar": "azure_storage_access_key",
+            "accessKey": "your access key here"
+        }
+    }
 }

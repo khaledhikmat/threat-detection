@@ -8,24 +8,22 @@ import (
 	"os"
 	"time"
 
-	dapr "github.com/dapr/go-sdk/client"
 	"github.com/google/uuid"
 
 	"github.com/khaledhikmat/threat-detection-shared/equates"
 	"github.com/khaledhikmat/threat-detection-shared/service/config"
+	"github.com/khaledhikmat/threat-detection-shared/service/publisher"
 	"github.com/khaledhikmat/threat-detection-shared/service/soicat"
+	"github.com/khaledhikmat/threat-detection-shared/service/storage"
 	"github.com/khaledhikmat/threat-detection-shared/utils"
 )
-
-// Injected DAPR client and other services
-var DaprClient dapr.Client
 
 func init() {
 	rand.Seed(time.Now().UnixNano())
 }
 
 // There is one agent per camera.
-func Run(canxCtx context.Context, configsvc config.IService, commandsStream chan string, capturer string, camera soicat.Camera) error {
+func Run(canxCtx context.Context, configsvc config.IService, storagesvc storage.IService, publishersvc publisher.IService, commandsStream chan string, capturer string, camera soicat.Camera) error {
 
 	// Create a cemra folder within the recordings folder if not exist
 	err := utils.CreateDirIfNotExist(fmt.Sprintf("%s/%s", configsvc.GetCapturer().RecordingsFolder, camera.Name))
@@ -34,7 +32,7 @@ func Run(canxCtx context.Context, configsvc config.IService, commandsStream chan
 	}
 
 	// Create a recording stream
-	recordingStream := captureRecordingClip(canxCtx, configsvc)
+	recordingStream := captureRecordingClip(canxCtx, configsvc, storagesvc, publishersvc)
 
 	if configsvc.GetCapturer().AgentMode == "streaming" {
 		return runStreaming(canxCtx, configsvc, recordingStream, commandsStream, capturer, camera)
@@ -187,7 +185,10 @@ func captureErrors(canxCtx context.Context, capturer string, camera soicat.Camer
 	return errorsStream
 }
 
-func captureRecordingClip(canxCtx context.Context, configsvc config.IService) chan equates.RecordingClip {
+func captureRecordingClip(canxCtx context.Context,
+	configsvc config.IService,
+	storagesvc storage.IService,
+	publishersvc publisher.IService) chan equates.RecordingClip {
 	// Create a recording stream
 	recordingStream := make(chan equates.RecordingClip, 10)
 
@@ -202,20 +203,26 @@ func captureRecordingClip(canxCtx context.Context, configsvc config.IService) ch
 				return
 			case recording := <-recordingStream:
 				fmt.Printf("recording processor file %s received\n", recording.LocalReference)
-				// TODO: Upload to S3
-				recording.CloudReference = recording.LocalReference
-				fmt.Printf("Uploading %s to S3\n", recording.CloudReference)
-				// Publish event
-				if configsvc.IsDapr() || configsvc.IsDiagrid() {
-					fmt.Printf("Publishing %s recording clip\n", recording.CloudReference)
-					err := DaprClient.PublishEvent(canxCtx, equates.ThreatDetectionPubSub, equates.RecordingsTopic, recording)
-					if err != nil {
-						fmt.Printf("unable to publish event: %s %v\n", recording.LocalReference, err)
-					}
+
+				// Upload to Cloud Storage i.e. S3, Azure Storage, etc
+				url, err := storagesvc.StoreRecordingClip(canxCtx, configsvc.GetStorageProvider(), recording)
+				if err != nil {
+					fmt.Printf("unable to store recording clip: %s in %s due to: %v\n", recording.LocalReference, configsvc.GetStorageProvider(), err)
 				}
+				recording.CloudReference = url
+				recording.StorageProvider = configsvc.GetStorageProvider()
+				fmt.Printf("Uploaded %s to %s => %s\n", recording.LocalReference, configsvc.GetStorageProvider(), recording.CloudReference)
+
+				// Publish event
+				fmt.Printf("Publishing %s recording clip\n", recording.CloudReference)
+				err = publishersvc.PublishRecordingClip(canxCtx, equates.ThreatDetectionPubSub, equates.RecordingsTopic, recording)
+				if err != nil {
+					fmt.Printf("unable to publish event: %s %v\n", recording.LocalReference, err)
+				}
+
 				// Delete local file
 				fmt.Printf("Deleting %s from local\n", recording.LocalReference)
-				err := os.Remove(recording.LocalReference)
+				err = os.Remove(recording.LocalReference)
 				if err != nil {
 					fmt.Printf("unable to remove file: %s %v\n", recording.LocalReference, err)
 				}

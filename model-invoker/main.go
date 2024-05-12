@@ -93,8 +93,8 @@ func recordingsHandler(_ context.Context, e *common.TopicEvent) (retry bool, err
 			return
 		}
 
-		fmt.Printf("Received a recording clip %s from CAPTURER %s and AGENT %s\n",
-			evt.LocalReference, evt.Capturer, evt.Camera)
+		fmt.Printf("Received a recording clip - LOCAL REF %s - CLOUD REF %s - PROVIDER %s - CAPTURER %s - AGENT %s\n",
+			evt.LocalReference, evt.CloudReference, evt.StorageProvider, evt.Capturer, evt.Camera)
 	}()
 
 	return false, nil

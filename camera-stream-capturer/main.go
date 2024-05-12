@@ -13,7 +13,9 @@ import (
 	"github.com/khaledhikmat/threat-detection-shared/equates"
 	"github.com/khaledhikmat/threat-detection-shared/service/capturer"
 	"github.com/khaledhikmat/threat-detection-shared/service/config"
+	"github.com/khaledhikmat/threat-detection-shared/service/publisher"
 	"github.com/khaledhikmat/threat-detection-shared/service/soicat"
+	"github.com/khaledhikmat/threat-detection-shared/service/storage"
 
 	"github.com/khaledhikmat/threat-detection/camera-stream-capturer/agent"
 	"github.com/khaledhikmat/threat-detection/camera-stream-capturer/internal/fsdata"
@@ -56,10 +58,10 @@ func main() {
 			return
 		}
 		defer daprClient.Close()
-
-		// Inject dapr client in agents
-		agent.DaprClient = daprClient
 	}
+
+	publishersvc := publisher.New(daprClient, configsvc)
+	storagesvc := storage.New(daprClient, configsvc)
 
 	// Run a discovery processor to grab camera agents
 	go func() {
@@ -91,7 +93,7 @@ func main() {
 							fmt.Printf("capturer %s discovery processor agent %s - starting....\n", capturerName, c.Name)
 							defer close(agentCommands[c.Name])
 
-							agentErr := agent.Run(canxCtx, configsvc, agentCommands[c.Name], capturerName, c)
+							agentErr := agent.Run(canxCtx, configsvc, storagesvc, publishersvc, agentCommands[c.Name], capturerName, c)
 							if agentErr != nil {
 								fmt.Printf("capturer %s discovery processor agent: %s - start error: %v\n", capturerName, c.Name, agentErr)
 							}
@@ -121,14 +123,12 @@ func main() {
 		case <-time.After(time.Duration(20 * time.Second)):
 			fmt.Printf("capturer %s heartbeat processor timeout to send heartbeat....\n", capturerName)
 			// Send a heartbeat signal
-			if configsvc.IsDapr() || configsvc.IsDiagrid() {
-				err := daprClient.SaveState(canxCtx,
-					equates.ThreatDetectionStateStore,
-					fmt.Sprintf("%s_%s", "heartbeat", capturerName),
-					[]byte(fmt.Sprintf("%s_%d", time.Now().UTC().Format("2006-01-02 15:04:05"), activeAgents)), nil)
-				if err != nil {
-					fmt.Printf("capturer %s heartbeat processor - error: %v\n", capturerName, err)
-				}
+			err := storagesvc.StoreKeyValue(canxCtx,
+				equates.ThreatDetectionStateStore,
+				fmt.Sprintf("%s_%s", "heartbeat", capturerName),
+				fmt.Sprintf("%s_%d", time.Now().UTC().Format("2006-01-02 15:04:05"), activeAgents))
+			if err != nil {
+				fmt.Printf("capturer %s heartbeat processor - error: %v\n", capturerName, err)
 			}
 		}
 	}
