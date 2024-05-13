@@ -3,8 +3,7 @@
         "agentMode": "files",
         "maxCameras": 3,
         "recordingsFolder": "./data/recordings",
-        "samplesFolder": "./data/samples",
-        "storageDestination": "s3"
+        "samplesFolder": "./data/samples"
     },
     "publisherProvider": "dapr",
     "storageProvider": "aws",
