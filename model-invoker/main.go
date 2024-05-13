@@ -53,33 +53,31 @@ func main() {
 	var c dapr.Client
 	var s common.Service
 
-	if configsvc.IsDapr() || configsvc.IsDiagrid() {
-		// Create a DAPR client
-		// Must be a global client since it is singleton
-		// Hence it would be injected in actor packages as needed
-		c, err = dapr.NewClient()
-		if err != nil {
-			fmt.Println("Failed to start dapr client", err)
-			return
-		}
-		daprclient = c
-		defer daprclient.Close()
+	// Create a DAPR client
+	// Must be a global client since it is singleton
+	// Hence it would be injected in actor packages as needed
+	c, err = dapr.NewClient()
+	if err != nil {
+		fmt.Println("Failed to start dapr client", err)
+		return
+	}
+	daprclient = c
+	defer daprclient.Close()
 
-		// Create a DAPR service using a hard-coded port (must match make start)
-		s = daprd.NewService(":8081")
-		fmt.Println("DAPR Service created!")
+	// Create a DAPR service using a hard-coded port (must match make start)
+	s = daprd.NewService(":8081")
+	fmt.Println("DAPR Service created!")
 
-		// Register pub/sub campaigns handlers
-		if err := s.AddTopicEventHandler(recordingsTopicSubscription, recordingsHandler); err != nil {
-			panic(err)
-		}
-		fmt.Println("Recordings topic handler registered!")
+	// Register pub/sub campaigns handlers
+	if err := s.AddTopicEventHandler(recordingsTopicSubscription, recordingsHandler); err != nil {
+		panic(err)
+	}
+	fmt.Println("Recordings topic handler registered!")
 
-		// Start DAPR service
-		// TODO: Provide cancellation context
-		if err := s.Start(); err != nil && err != http.ErrServerClosed {
-			panic(err)
-		}
+	// Start DAPR service
+	// TODO: Provide cancellation context
+	if err := s.Start(); err != nil && err != http.ErrServerClosed {
+		panic(err)
 	}
 }
 
