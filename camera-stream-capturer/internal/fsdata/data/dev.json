@@ -6,7 +6,8 @@
         "samplesFolder": "./data/samples"
     },
     "publisherProvider": "dapr",
-    "storageProvider": "aws",
+    "fileStorageProvider": "aws",
+    "keyValStorageProvider": "dapr",
     "cloudStorageProviders": {
         "aws": {
             "accessKeyEnvVar": "aws_s3_access_key",

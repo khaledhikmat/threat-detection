@@ -205,17 +205,17 @@ func captureRecordingClip(canxCtx context.Context,
 				fmt.Printf("recording processor file %s received\n", recording.LocalReference)
 
 				// Upload to Cloud Storage i.e. S3, Azure Storage, etc
-				url, err := storagesvc.StoreRecordingClip(canxCtx, configsvc.GetStorageProvider(), recording)
+				url, err := storagesvc.StoreRecordingClip(canxCtx, recording)
 				if err != nil {
-					fmt.Printf("unable to store recording clip: %s in %s due to: %v\n", recording.LocalReference, configsvc.GetStorageProvider(), err)
+					fmt.Printf("unable to store recording clip: %s in %s due to: %v\n", recording.LocalReference, configsvc.GetFileStorageProvider(), err)
 				}
 				recording.CloudReference = url
-				recording.StorageProvider = configsvc.GetStorageProvider()
-				fmt.Printf("Uploaded %s to %s => %s\n", recording.LocalReference, configsvc.GetStorageProvider(), recording.CloudReference)
+				recording.StorageProvider = configsvc.GetFileStorageProvider()
+				fmt.Printf("Uploaded %s to %s => %s\n", recording.LocalReference, configsvc.GetFileStorageProvider(), recording.CloudReference)
 
 				// Publish event
 				fmt.Printf("Publishing %s recording clip\n", recording.CloudReference)
-				err = publishersvc.PublishRecordingClip(canxCtx, configsvc.GetPublisherProvider(), equates.ThreatDetectionPubSub, equates.RecordingsTopic, recording)
+				err = publishersvc.PublishRecordingClip(canxCtx, equates.ThreatDetectionPubSub, equates.RecordingsTopic, recording)
 				if err != nil {
 					fmt.Printf("unable to publish event: %s %v\n", recording.LocalReference, err)
 				}

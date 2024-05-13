@@ -124,7 +124,6 @@ func main() {
 			fmt.Printf("capturer %s heartbeat processor timeout to send heartbeat....\n", capturerName)
 			// Send a heartbeat signal
 			err := storagesvc.StoreKeyValue(canxCtx,
-				configsvc.GetPublisherProvider(),
 				equates.ThreatDetectionStateStore,
 				fmt.Sprintf("%s_%s", "heartbeat", capturerName),
 				fmt.Sprintf("%s_%d", time.Now().UTC().Format("2006-01-02 15:04:05"), activeAgents))
