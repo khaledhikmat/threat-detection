@@ -215,7 +215,7 @@ func captureRecordingClip(canxCtx context.Context,
 
 				// Publish event
 				fmt.Printf("Publishing %s recording clip\n", recording.CloudReference)
-				err = publishersvc.PublishRecordingClip(canxCtx, equates.ThreatDetectionPubSub, equates.RecordingsTopic, recording)
+				err = publishersvc.PublishRecordingClip(canxCtx, configsvc.GetPublisherProvider(), equates.ThreatDetectionPubSub, equates.RecordingsTopic, recording)
 				if err != nil {
 					fmt.Printf("unable to publish event: %s %v\n", recording.LocalReference, err)
 				}

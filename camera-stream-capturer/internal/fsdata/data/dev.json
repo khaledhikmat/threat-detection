@@ -6,6 +6,7 @@
         "samplesFolder": "./data/samples",
         "storageDestination": "s3"
     },
+    "publisherProvider": "dapr",
     "storageProvider": "aws",
     "cloudStorageProviders": {
         "aws": {
