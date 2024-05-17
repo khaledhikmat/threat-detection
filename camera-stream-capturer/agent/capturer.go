@@ -93,6 +93,7 @@ func CaptureStream(canxCtx context.Context, configsvc config.IService, errorsStr
 						CloudReference: "",
 						Capturer:       "",
 						Camera:         camera.Name,
+						Analytics:      camera.Analytics,
 						Frames:         frames,
 					}
 

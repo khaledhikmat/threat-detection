@@ -152,7 +152,7 @@ func runFiles(canxCtx context.Context, configsvc config.IService, recordingStrea
 		case <-time.After(time.Duration(3 * time.Second)):
 			fmt.Printf("capturer %s - agent %s mode %s - timeout....perform periodic tasks...\n", capturer, camera.Name, mode)
 
-			err := produceClip(recordingStream, configsvc.GetCapturer().SamplesFolder, configsvc.GetCapturer().RecordingsFolder, capturer, camera)
+			err := produceClip(recordingStream, configsvc, configsvc.GetCapturer().SamplesFolder, configsvc.GetCapturer().RecordingsFolder, capturer, camera)
 			if err != nil {
 				errorsStream <- fmt.Errorf("capturer %s - agent %s mode %s - uploading files: %v", capturer, camera.Name, mode, err)
 			}
@@ -233,7 +233,11 @@ func captureRecordingClip(canxCtx context.Context,
 	return recordingStream
 }
 
-func produceClip(recordingStream chan equates.RecordingClip, samplesFolder, recordingsFolder string, capturer string, camera soicat.Camera) error {
+func produceClip(recordingStream chan equates.RecordingClip,
+	configsvc config.IService,
+	samplesFolder, recordingsFolder string,
+	capturer string,
+	camera soicat.Camera) error {
 	files, err := os.Open(samplesFolder)
 	if err != nil {
 		return fmt.Errorf("unable to open samples foler %s: %v", samplesFolder, err)
@@ -266,12 +270,14 @@ func produceClip(recordingStream chan equates.RecordingClip, samplesFolder, reco
 
 	// Send the recording clip via the storage stream
 	recordingStream <- equates.RecordingClip{
-		ID:             uuid.NewString(),
-		LocalReference: destination.Name(),
-		CloudReference: "",
-		Capturer:       capturer,
-		Camera:         camera.Name,
-		Frames:         0,
+		ID:              uuid.NewString(),
+		LocalReference:  destination.Name(),
+		CloudReference:  "",
+		StorageProvider: configsvc.GetFileStorageProvider(),
+		Capturer:        capturer,
+		Camera:          camera.Name,
+		Analytics:       camera.Analytics,
+		Frames:          0,
 	}
 
 	return nil

@@ -17,6 +17,8 @@ import (
 	daprd "github.com/dapr/go-sdk/service/http"
 
 	"github.com/khaledhikmat/threat-detection-shared/service/config"
+	"github.com/khaledhikmat/threat-detection-shared/service/publisher"
+	"github.com/khaledhikmat/threat-detection-shared/service/storage"
 	"github.com/khaledhikmat/threat-detection/model-invoker/internal/fsdata"
 )
 
@@ -28,7 +30,10 @@ var recordingsTopicSubscription = &common.Subscription{
 
 // Global DAPR client
 var canxCtx context.Context
-var daprclient dapr.Client
+var daprClient dapr.Client
+var configSvc config.IService
+var publisherSvc publisher.IService
+var storageSvc storage.IService
 
 func main() {
 	rootCtx := context.Background()
@@ -43,9 +48,9 @@ func main() {
 
 	// Setup services
 	configData := fsdata.GetEmbeddedConfigData()
-	configsvc := config.New(configData)
+	configSvc = config.New(configData)
 
-	if !configsvc.IsDapr() && !configsvc.IsDiagrid() {
+	if !configSvc.IsDapr() && !configSvc.IsDiagrid() {
 		fmt.Println("This Microservice requires that we run in DAPR or Diagrid mode", err)
 		return
 	}
@@ -61,8 +66,11 @@ func main() {
 		fmt.Println("Failed to start dapr client", err)
 		return
 	}
-	daprclient = c
-	defer daprclient.Close()
+	daprClient = c
+	defer daprClient.Close()
+
+	publisherSvc = publisher.New(daprClient, configSvc)
+	storageSvc = storage.New(daprClient, configSvc)
 
 	// Create a DAPR service using a hard-coded port (must match make start)
 	s = daprd.NewService(":8081")
@@ -81,19 +89,42 @@ func main() {
 	}
 }
 
-func recordingsHandler(_ context.Context, e *common.TopicEvent) (retry bool, err error) {
-	go func() {
-		// Decode pledge
-		evt := equates.RecordingClip{}
-		err := mapstructure.Decode(e.Data, &evt)
-		if err != nil {
-			fmt.Println("Failed to decode event", err)
-			return
-		}
+func recordingsHandler(ctx context.Context, e *common.TopicEvent) (retry bool, err error) {
+	// Decode pledge
+	evt := equates.RecordingClip{}
+	err = mapstructure.Decode(e.Data, &evt)
+	if err != nil {
+		fmt.Println("Failed to decode event", err)
+		return
+	}
 
-		fmt.Printf("Received a recording clip - LOCAL REF %s - CLOUD REF %s - PROVIDER %s - CAPTURER %s - AGENT %s\n",
-			evt.LocalReference, evt.CloudReference, evt.StorageProvider, evt.Capturer, evt.Camera)
-	}()
+	// Determine if the AI Model is available
+	if evt.Analytics == nil ||
+		!modelSupported(configSvc.GetSupportedAIModel(), evt.Analytics) {
+		fmt.Printf("Ignoring the clip because our supported model [%s] is not needed\n", configSvc.GetSupportedAIModel())
+		return
+	}
 
+	// Retrieve the recording clip from storage
+	b, err := storageSvc.RetrieveRecordingClip(ctx, evt)
+	if err != nil {
+		fmt.Println("Failed to retrieve event's clip", err)
+		return
+	}
+
+	fmt.Printf("Received a recording clip - MODEL %s - CLOUD REF %s - BYTES %d - PROVIDER %s - CAPTURER %s - AGENT %s\n",
+		configSvc.GetSupportedAIModel(), evt.CloudReference, len(b), evt.StorageProvider, evt.Capturer, evt.Camera)
+
+	// TODO: Invoke the model based on the clip
 	return false, nil
+}
+
+func modelSupported(model string, models []string) bool {
+	for _, v := range models {
+		if v == model {
+			return true
+		}
+	}
+
+	return false
 }
