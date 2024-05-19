@@ -8,4 +8,5 @@
 **/secrets.json
 **/vendor
 **/data/recordings
+**/*.db
 /threat-detection-shared

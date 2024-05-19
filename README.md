@@ -74,4 +74,15 @@ To stop a locallY running instance using another terminal session:
 ./stop-dapr
 ```
 
+## SQLLite
+
+```bash
+brew install sqlite3
+brew install sqlite-utils
+```
+
+[https://earthly.dev/blog/golang-sqlite/](https://earthly.dev/blog/golang-sqlite/)
+[https://www.allhandsontech.com/programming/golang/how-to-use-sqlite-with-go/](https://www.allhandsontech.com/programming/golang/how-to-use-sqlite-with-go/)
+
+
 

@@ -15,7 +15,13 @@ import (
 	"github.com/khaledhikmat/threat-detection-shared/service/soicat"
 )
 
-func CaptureStream(canxCtx context.Context, configsvc config.IService, errorsStream chan interface{}, packetsStream chan Packet, storageStream chan equates.RecordingClip, camera soicat.Camera) {
+func CaptureStream(canxCtx context.Context,
+	configsvc config.IService,
+	errorsStream chan interface{},
+	packetsStream chan Packet,
+	storageStream chan equates.RecordingClip,
+	capturer string,
+	camera soicat.Camera) {
 	var file *os.File
 	var myMuxer *mp4.Movmuxer
 	var videoTrack uint32
@@ -23,6 +29,7 @@ func CaptureStream(canxCtx context.Context, configsvc config.IService, errorsStr
 	// Get as many packets we need.
 	recordingStatus := "idle"
 	recordingStart := time.Now().Unix()
+	recordingStartTS := time.Now()
 	frames := 0
 
 	for {
@@ -35,6 +42,7 @@ func CaptureStream(canxCtx context.Context, configsvc config.IService, errorsStr
 				// Start recording only when we receive a key frame packet
 				if pkt.IsVideo && pkt.IsKeyFrame {
 					recordingStart = time.Now().Unix()
+					recordingStartTS = time.Now()
 					fullName := fmt.Sprintf("%s/%s/%s.mp4", configsvc.GetCapturer().RecordingsFolder, camera.Name, strconv.FormatInt(recordingStart, 10))
 
 					var err error
@@ -91,7 +99,7 @@ func CaptureStream(canxCtx context.Context, configsvc config.IService, errorsStr
 						ID:                uuid.NewString(),
 						LocalReference:    fmt.Sprintf("%s/%s/%s", configsvc.GetCapturer().RecordingsFolder, camera.Name, file.Name()),
 						CloudReference:    "",
-						Capturer:          "",
+						Capturer:          capturer,
 						Camera:            camera.Name,
 						Region:            camera.Region,
 						Location:          camera.Location,
@@ -100,6 +108,8 @@ func CaptureStream(canxCtx context.Context, configsvc config.IService, errorsStr
 						AlertTypes:        camera.AlertTypes,
 						MediaIndexerTypes: camera.MediaIndexerTypes,
 						Frames:            frames,
+						BeginTime:         recordingStartTS.Format(equates.Layout),
+						EndTime:           time.Now().Format(equates.Layout),
 					}
 
 					// Remove the file reference

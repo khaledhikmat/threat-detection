@@ -83,4 +83,4 @@ apps:
     env:
       APP_PORT: 8087  
       DAPR_PORT: 3507  
-      MEDIA_INDEXER_TYPE: "dynamodb" 
+      MEDIA_INDEXER_TYPE: "database" 

@@ -41,7 +41,12 @@ func Run(canxCtx context.Context, configsvc config.IService, storagesvc storage.
 	return runFiles(canxCtx, configsvc, recordingStream, commandsStream, capturer, camera)
 }
 
-func runStreaming(canxCtx context.Context, configsvc config.IService, recordingStream chan equates.RecordingClip, commandsStream chan string, capturer string, camera soicat.Camera) error {
+func runStreaming(canxCtx context.Context,
+	configsvc config.IService,
+	recordingStream chan equates.RecordingClip,
+	commandsStream chan string,
+	capturer string,
+	camera soicat.Camera) error {
 	mode := "streaming"
 	// Establishing the camera connection without backchannel if no substream
 	if camera.RtspURL == "" {
@@ -92,7 +97,7 @@ func runStreaming(canxCtx context.Context, configsvc config.IService, recordingS
 
 	// Capture stream and write mp4 clips to destination (i.e. disk, S3, etc).
 	go func() {
-		CaptureStream(canxCtx, configsvc, errorsStream, packetsStream, recordingStream, camera)
+		CaptureStream(canxCtx, configsvc, errorsStream, packetsStream, recordingStream, capturer, camera)
 	}()
 
 	// Wait for cancellation, command or periodic timer
@@ -282,7 +287,9 @@ func produceClip(recordingStream chan equates.RecordingClip,
 		Analytics:         camera.Analytics,
 		AlertTypes:        camera.AlertTypes,
 		MediaIndexerTypes: camera.MediaIndexerTypes,
-		Frames:            0,
+		Frames:            122,
+		BeginTime:         time.Now().Add(-3 * time.Second).Format(equates.Layout),
+		EndTime:           time.Now().Format(equates.Layout),
 	}
 
 	return nil
