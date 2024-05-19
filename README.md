@@ -103,6 +103,14 @@ rm clips.db
 
 To cleanup all resources in `AWS S3`, login to the console portal and cleanup bucket items ma manually.
 
+## Environment Variables
 
+These should go in the `.env` file:
+
+```bash
+AWS_ACCESS_KEY_ID="<your-key>"
+AWS_SECRET_ACCESS_KEY="<your-key>"
+SQLLITE_FILE_PATH="<your-path>/db/clips.db" 
+```
 
 
