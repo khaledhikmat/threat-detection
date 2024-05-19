@@ -18,27 +18,24 @@ import (
 	daprd "github.com/dapr/go-sdk/service/http"
 
 	"github.com/khaledhikmat/threat-detection-shared/service/config"
-	"github.com/khaledhikmat/threat-detection-shared/service/publisher"
-	"github.com/khaledhikmat/threat-detection-shared/service/storage"
-	"github.com/khaledhikmat/threat-detection/model-invoker/internal/fsdata"
+	"github.com/khaledhikmat/threat-detection-shared/service/persistence"
+	"github.com/khaledhikmat/threat-detection/media-indexer/internal/fsdata"
 )
 
-var recordingsTopicSubscription = &common.Subscription{
+var metadataTopicSubscription = &common.Subscription{
 	PubsubName: equates.ThreatDetectionPubSub,
-	Topic:      equates.RecordingsTopic,
-	Route:      fmt.Sprintf("/%s", equates.RecordingsTopic),
+	Topic:      equates.MetadataTopic,
+	Route:      fmt.Sprintf("/%s", equates.MetadataTopic),
 }
 
 // Global DAPR client
 var canxCtx context.Context
 var daprClient dapr.Client
 var configSvc config.IService
-var publisherSvc publisher.IService
-var storageSvc storage.IService
+var persistenceSvc persistence.IService
 
-var modelProcs = map[string]func(ctx context.Context, clip equates.RecordingClip) error{
-	"weapon": weapon,
-	"fire":   fire,
+var indexProcs = map[string]func(ctx context.Context, clip equates.RecordingClip) error{
+	"database": database,
 }
 
 func main() {
@@ -80,18 +77,17 @@ func main() {
 	daprClient = c
 	defer daprClient.Close()
 
-	publisherSvc = publisher.New(daprClient, configSvc)
-	storageSvc = storage.New(daprClient, configSvc)
+	persistenceSvc = persistence.New(configSvc)
 
 	// Create a DAPR service using a hard-coded port (must match make start)
 	s = daprd.NewService(":" + os.Getenv("APP_PORT"))
-	fmt.Printf("Model Invoker - DAPR Service for %s created!\n", configSvc.GetSupportedAIModel())
+	fmt.Printf("Media Indexer - DAPR Service for %s created!\n", configSvc.GetSupportedMediaIndexType())
 
-	// Register pub/sub recordings topic handler
-	if err := s.AddTopicEventHandler(recordingsTopicSubscription, recordingsHandler); err != nil {
+	// Register pub/sub metadata topic handler
+	if err := s.AddTopicEventHandler(metadataTopicSubscription, indexerHandler); err != nil {
 		panic(err)
 	}
-	fmt.Printf("Model Invoker - recordings topic handler registered for %s!\n", configSvc.GetSupportedAIModel())
+	fmt.Printf("Media Indexer - metadata topic handler registered for %s!\n", configSvc.GetSupportedMediaIndexType())
 
 	// Start DAPR service
 	// TODO: Provide cancellation context
@@ -100,7 +96,7 @@ func main() {
 	}
 }
 
-func recordingsHandler(ctx context.Context, e *common.TopicEvent) (bool, error) {
+func indexerHandler(ctx context.Context, e *common.TopicEvent) (bool, error) {
 	// Decode pledge
 	evt := equates.RecordingClip{}
 	err := mapstructure.Decode(e.Data, &evt)
@@ -109,24 +105,24 @@ func recordingsHandler(ctx context.Context, e *common.TopicEvent) (bool, error) 
 		return false, err
 	}
 
-	// Determine if mi AI Model is required for this clip
-	if evt.Analytics == nil ||
-		!utils.Contains(evt.Analytics, configSvc.GetSupportedAIModel()) {
-		fmt.Printf("Ignoring the clip because our supported model [%s] is not needed\n", configSvc.GetSupportedAIModel())
+	// Determine if my media indexer is required for this clip
+	if evt.MediaIndexerTypes == nil ||
+		!utils.Contains(evt.MediaIndexerTypes, configSvc.GetSupportedMediaIndexType()) {
+		fmt.Printf("Ignoring the clip because our supported index type [%s] is not needed\n", configSvc.GetSupportedMediaIndexType())
 		return false, err
 	}
 
-	fmt.Printf("Processing the clip because our supported model [%s] is needed\n", configSvc.GetSupportedAIModel())
+	fmt.Printf("Processing the clip because our supported index type [%s] is needed\n", configSvc.GetSupportedMediaIndexType())
 
-	fn, ok := modelProcs[configSvc.GetSupportedAIModel()]
+	fn, ok := indexProcs[configSvc.GetSupportedMediaIndexType()]
 	if !ok {
-		fmt.Printf("AI Model %s not supported\n", configSvc.GetSupportedAIModel())
+		fmt.Printf("Index processor %s not supported\n", configSvc.GetSupportedMediaIndexType())
 		return false, err
 	}
 
 	err = fn(ctx, evt)
 	if err != nil {
-		fmt.Printf("AI Model processor returned an error %s\n", err.Error())
+		fmt.Printf("Index processor returned an error %s\n", err.Error())
 		return false, err
 	}
 

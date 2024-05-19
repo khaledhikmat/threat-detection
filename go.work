@@ -1,7 +1,9 @@
 go 1.22.2
 
 use (
+	./alert-notifier
 	./camera-stream-capturer
+	./media-indexer
 	./model-invoker
 	./threat-detection-shared
 )

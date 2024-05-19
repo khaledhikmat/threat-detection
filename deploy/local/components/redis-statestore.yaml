@@ -16,7 +16,11 @@ spec:
     value: name
 scopes:
   - threat-detection-camera-stream-capturer
-  - threat-detection-model-invoker
-  - threat-detection-ccure-notifier
-  - threat-detection-clip-indexer
+  - threat-detection-weapon-model-invoker
+  - threat-detection-fire-model-invoker
+  - threat-detection-ccure-alert-notifier
+  - threat-detection-snow-alert-notifier
+  - threat-detection-pers-alert-notifier
+  - threat-detection-slack-alert-notifier
+  - threat-detection-dynamodb-media-indexer
   - threat-detection-api

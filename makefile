@@ -13,19 +13,19 @@ test:
 build: clean_dist clean_build test
 	GOOS='linux' GOARCH='amd64' GO111MODULE='on' go build -o "${BUILD_DIR}/threat-detection-camera-stream-capturer" ./camera-stream-capturer/main.go
 	GOOS='linux' GOARCH='amd64' GO111MODULE='on' go build -o "${BUILD_DIR}/threat-detection-model-invoker" ./model-invoker/main.go
-	GOOS='linux' GOARCH='amd64' GO111MODULE='on' go build -o "${BUILD_DIR}/threat-detection-ccure-invoker" ./ccure-invoker/main.go
-	GOOS='linux' GOARCH='amd64' GO111MODULE='on' go build -o "${BUILD_DIR}/threat-detection-clip-indexer" ./clip-indexer/main.go
+	GOOS='linux' GOARCH='amd64' GO111MODULE='on' go build -o "${BUILD_DIR}/threat-detection-alert-notifier" ./alert-notifier/main.go
+	GOOS='linux' GOARCH='amd64' GO111MODULE='on' go build -o "${BUILD_DIR}/threat-detection-media-indexer" ./media-indexer/main.go
 	GOOS='linux' GOARCH='amd64' GO111MODULE='on' go build -o "${BUILD_DIR}/threat-detection-api" ./api/main.go
 
 dockerize: clean_dist clean_build test build
 	docker buildx build --platform linux/amd64 -t khaledhikmat/threat-detection-camera-stream-capturer:latest ./camera-stream-capturer -f ./camera-stream-capturer/Dockerfile
 	docker buildx build --platform linux/amd64 -t khaledhikmat/threat-detection-model-invoker:latest ./model-invoker -f ./model-invoker/Dockerfile
-	docker buildx build --platform linux/amd64 -t khaledhikmat/threat-detection-ccure-invoker:latest ./ccure-invoker -f ./ccure-invoker/Dockerfile
-	docker buildx build --platform linux/amd64 -t khaledhikmat/threat-detection-clip-indexer:latest ./clip-indexer -f ./clip-indexer/Dockerfile
+	docker buildx build --platform linux/amd64 -t khaledhikmat/threat-detection-alert-notifier:latest ./alert-notifier -f ./alert-notifier/Dockerfile
+	docker buildx build --platform linux/amd64 -t khaledhikmat/threat-detection-media-indexer:latest ./media-indexer -f ./media-indexer/Dockerfile
 	docker buildx build --platform linux/amd64 -t khaledhikmat/threat-detection-api:latest ./api-f ./api/Dockerfile
 
 start-dapr: clean_dist clean_build test
-	export THREAT_DETECTION_MODE="dapr" && dapr run -f .
+	dapr run -f .
 
 start-diagrid: clean_dist clean_build test
 	export THREAT_DETECTION_MODE="diagrid" && diagrid dev start -f dev-eagle-threat-detection.yaml

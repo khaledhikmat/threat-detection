@@ -1,0 +1,8 @@
+github.com/dapr/go-sdk v1.10.1 h1:g6mM2RXyGkrzsqWFfCy8rw+UAt1edQEgRaQXT+XP4PE=
+github.com/dapr/go-sdk v1.10.1/go.mod h1:lPjyF/xubh35fbdNdKkxBbFxFNCmta4zmvsk0JxuUG0=
+github.com/joho/godotenv v1.5.1 h1:7eLL/+HRGLY0ldzfGMeQkb7vMd0as4CfYvUVzLqw0N0=
+github.com/joho/godotenv v1.5.1/go.mod h1:f4LDr5Voq0i2e/R5DDNOoa2zzDfwtkZa6DnEwAbqwq4=
+github.com/khaledhikmat/threat-detection-shared v0.0.0-20240509221752-080c37e86fe9 h1:97wlWf5WcSeo0cY5b7Lf1kZM7Gn4dQDeMi/5Y9jZjoE=
+github.com/khaledhikmat/threat-detection-shared v0.0.0-20240509221752-080c37e86fe9/go.mod h1:g53bQHwmivVIxpeAQyfO/5vWUJHtH4OEpBQcI+PwDd4=
+github.com/mitchellh/mapstructure v1.5.0 h1:jeMsZIYE/09sWLaz43PL7Gy6RuMjD2eJVyuac5Z2hdY=
+github.com/mitchellh/mapstructure v1.5.0/go.mod h1:bFUtVrKA4DC2yAKiSyO/QUcy7e+RRV2QTWOzhPopBRo=

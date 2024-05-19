@@ -88,13 +88,18 @@ func CaptureStream(canxCtx context.Context, configsvc config.IService, errorsStr
 
 					// Send the recording clip via the storage stream
 					storageStream <- equates.RecordingClip{
-						ID:             uuid.NewString(),
-						LocalReference: fmt.Sprintf("%s/%s/%s", configsvc.GetCapturer().RecordingsFolder, camera.Name, file.Name()),
-						CloudReference: "",
-						Capturer:       "",
-						Camera:         camera.Name,
-						Analytics:      camera.Analytics,
-						Frames:         frames,
+						ID:                uuid.NewString(),
+						LocalReference:    fmt.Sprintf("%s/%s/%s", configsvc.GetCapturer().RecordingsFolder, camera.Name, file.Name()),
+						CloudReference:    "",
+						Capturer:          "",
+						Camera:            camera.Name,
+						Region:            camera.Region,
+						Location:          camera.Location,
+						Priority:          camera.Priority,
+						Analytics:         camera.Analytics,
+						AlertTypes:        camera.AlertTypes,
+						MediaIndexerTypes: camera.MediaIndexerTypes,
+						Frames:            frames,
 					}
 
 					// Remove the file reference

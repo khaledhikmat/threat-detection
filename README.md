@@ -7,13 +7,13 @@ go work init ./shared ./camera-stream-capturer
 To add new modules:
 
 ```bash
-go work edit -use ./ccure-notifier 
+go work edit -use ./alert-notifier 
 ```
 
 To drop modules:
 
 ```bash
-go work edit -dropuse ./ccure-notifier 
+go work edit -dropuse ./alert-notifier 
 ```
 
 ## Diagrid

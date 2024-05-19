@@ -18,27 +18,27 @@ import (
 	daprd "github.com/dapr/go-sdk/service/http"
 
 	"github.com/khaledhikmat/threat-detection-shared/service/config"
-	"github.com/khaledhikmat/threat-detection-shared/service/publisher"
 	"github.com/khaledhikmat/threat-detection-shared/service/storage"
-	"github.com/khaledhikmat/threat-detection/model-invoker/internal/fsdata"
+	"github.com/khaledhikmat/threat-detection/alert-notifier/internal/fsdata"
 )
 
-var recordingsTopicSubscription = &common.Subscription{
+var alertTopicSubscription = &common.Subscription{
 	PubsubName: equates.ThreatDetectionPubSub,
-	Topic:      equates.RecordingsTopic,
-	Route:      fmt.Sprintf("/%s", equates.RecordingsTopic),
+	Topic:      equates.AlertTopic,
+	Route:      fmt.Sprintf("/%s", equates.AlertTopic),
 }
 
 // Global DAPR client
 var canxCtx context.Context
 var daprClient dapr.Client
 var configSvc config.IService
-var publisherSvc publisher.IService
 var storageSvc storage.IService
 
-var modelProcs = map[string]func(ctx context.Context, clip equates.RecordingClip) error{
-	"weapon": weapon,
-	"fire":   fire,
+var alertProcs = map[string]func(ctx context.Context, clip equates.RecordingClip) error{
+	"ccure": ccure,
+	"snow":  snow,
+	"pers":  pers,
+	"slack": slack,
 }
 
 func main() {
@@ -80,18 +80,17 @@ func main() {
 	daprClient = c
 	defer daprClient.Close()
 
-	publisherSvc = publisher.New(daprClient, configSvc)
 	storageSvc = storage.New(daprClient, configSvc)
 
 	// Create a DAPR service using a hard-coded port (must match make start)
 	s = daprd.NewService(":" + os.Getenv("APP_PORT"))
-	fmt.Printf("Model Invoker - DAPR Service for %s created!\n", configSvc.GetSupportedAIModel())
+	fmt.Printf("Alert Notifier - DAPR Service for %s created!\n", configSvc.GetSupportedAlertType())
 
-	// Register pub/sub recordings topic handler
-	if err := s.AddTopicEventHandler(recordingsTopicSubscription, recordingsHandler); err != nil {
+	// Register pub/sub metadata topic handler
+	if err := s.AddTopicEventHandler(alertTopicSubscription, alertHandler); err != nil {
 		panic(err)
 	}
-	fmt.Printf("Model Invoker - recordings topic handler registered for %s!\n", configSvc.GetSupportedAIModel())
+	fmt.Printf("Alert Notifier- alert topic handler registered for %s!\n", configSvc.GetSupportedAlertType())
 
 	// Start DAPR service
 	// TODO: Provide cancellation context
@@ -100,7 +99,7 @@ func main() {
 	}
 }
 
-func recordingsHandler(ctx context.Context, e *common.TopicEvent) (bool, error) {
+func alertHandler(ctx context.Context, e *common.TopicEvent) (bool, error) {
 	// Decode pledge
 	evt := equates.RecordingClip{}
 	err := mapstructure.Decode(e.Data, &evt)
@@ -109,24 +108,24 @@ func recordingsHandler(ctx context.Context, e *common.TopicEvent) (bool, error) 
 		return false, err
 	}
 
-	// Determine if mi AI Model is required for this clip
-	if evt.Analytics == nil ||
-		!utils.Contains(evt.Analytics, configSvc.GetSupportedAIModel()) {
-		fmt.Printf("Ignoring the clip because our supported model [%s] is not needed\n", configSvc.GetSupportedAIModel())
+	// Determine if my alert notifier is required for this clip
+	if evt.AlertTypes == nil ||
+		!utils.Contains(evt.AlertTypes, configSvc.GetSupportedAlertType()) {
+		fmt.Printf("Ignoring the clip because our supported alert type [%s] is not needed\n", configSvc.GetSupportedAlertType())
 		return false, err
 	}
 
-	fmt.Printf("Processing the clip because our supported model [%s] is needed\n", configSvc.GetSupportedAIModel())
+	fmt.Printf("Processing the clip because our supported alert type [%s] is needed\n", configSvc.GetSupportedAlertType())
 
-	fn, ok := modelProcs[configSvc.GetSupportedAIModel()]
+	fn, ok := alertProcs[configSvc.GetSupportedAlertType()]
 	if !ok {
-		fmt.Printf("AI Model %s not supported\n", configSvc.GetSupportedAIModel())
+		fmt.Printf("Alert processor %s not supported\n", configSvc.GetSupportedAlertType())
 		return false, err
 	}
 
 	err = fn(ctx, evt)
 	if err != nil {
-		fmt.Printf("AI Model processor returned an error %s\n", err.Error())
+		fmt.Printf("Alert processor returned an error %s\n", err.Error())
 		return false, err
 	}
 

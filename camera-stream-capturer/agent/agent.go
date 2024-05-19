@@ -270,14 +270,19 @@ func produceClip(recordingStream chan equates.RecordingClip,
 
 	// Send the recording clip via the storage stream
 	recordingStream <- equates.RecordingClip{
-		ID:              uuid.NewString(),
-		LocalReference:  destination.Name(),
-		CloudReference:  "",
-		StorageProvider: configsvc.GetFileStorageProvider(),
-		Capturer:        capturer,
-		Camera:          camera.Name,
-		Analytics:       camera.Analytics,
-		Frames:          0,
+		ID:                uuid.NewString(),
+		LocalReference:    destination.Name(),
+		CloudReference:    "",
+		StorageProvider:   configsvc.GetFileStorageProvider(),
+		Capturer:          capturer,
+		Camera:            camera.Name,
+		Region:            camera.Region,
+		Location:          camera.Location,
+		Priority:          camera.Priority,
+		Analytics:         camera.Analytics,
+		AlertTypes:        camera.AlertTypes,
+		MediaIndexerTypes: camera.MediaIndexerTypes,
+		Frames:            0,
 	}
 
 	return nil
