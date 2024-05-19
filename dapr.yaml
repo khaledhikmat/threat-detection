@@ -74,7 +74,7 @@ apps:
       APP_PORT: 8086  
       DAPR_PORT: 3506  
       ALERT_TYPE: "slack" 
-  - appID: threat-detection-dynamodb-media-indexer
+  - appID: threat-detection-database-media-indexer
     appDirPath: ./media-indexer/
     appPort: 8087
     daprHTTPPort: 3507
@@ -84,3 +84,12 @@ apps:
       APP_PORT: 8087  
       DAPR_PORT: 3507  
       MEDIA_INDEXER_TYPE: "database" 
+  - appID: threat-detection-media-api
+    appDirPath: ./media-api/
+    appPort: 8088
+    daprHTTPPort: 3508
+    logLevel: debug
+    command: ["go","run", "."]
+    env:
+      APP_PORT: 8088  
+      DAPR_PORT: 3508  

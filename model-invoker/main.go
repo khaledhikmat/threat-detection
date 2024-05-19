@@ -109,7 +109,7 @@ func recordingsHandler(ctx context.Context, e *common.TopicEvent) (bool, error) 
 		return false, err
 	}
 
-	// Determine if mi AI Model is required for this clip
+	// Determine if my AI Model is required for this clip
 	if evt.Analytics == nil ||
 		!utils.Contains(evt.Analytics, configSvc.GetSupportedAIModel()) {
 		fmt.Printf("Ignoring the clip because our supported model [%s] is not needed\n", configSvc.GetSupportedAIModel())

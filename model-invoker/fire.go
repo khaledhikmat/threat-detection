@@ -33,9 +33,11 @@ func fire(ctx context.Context, clip equates.RecordingClip) error {
 
 	// Add the tags to the clip
 	clip.Tags = tags
+	clip.TagsCount = len(tags)
 
 	// Check if the tags contain "fire" which means fire was detected
 	if utils.Contains(tags, "fire") {
+		clip.AlertsCount = 1
 		// Publish to the alerts topic
 		fmt.Printf("fire model invoker publishes alert: %s - tags: %d\n", clip.LocalReference, len(clip.Tags))
 		err = publisherSvc.PublishRecordingClip(ctx, equates.ThreatDetectionPubSub, equates.AlertTopic, clip)

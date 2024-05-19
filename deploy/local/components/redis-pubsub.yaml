@@ -21,5 +21,5 @@ scopes:
   - threat-detection-snow-alert-notifier
   - threat-detection-pers-alert-notifier
   - threat-detection-slack-alert-notifier
-  - threat-detection-dynamodb-media-indexer
-  - threat-detection-api
+  - threat-detection-database-media-indexer
+  - threat-detection-media-api

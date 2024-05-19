@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        {{ template "meta.html" . }}
+        <title>Video Threat Detection</title>
+    </head>
+
+    <body class="container">
+        {{ template "navbar.html" . }}
+        <div class="row mt-4 g-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        Clips List for <b>{{ .ClipsRegion }}</b>
+                    </div>
+                    <div class="card-body">
+                        <p>{{ .ClipsErr }}</p>
+
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <td>ID</td>
+                                    <td class="text-center">CAPTURER</td>
+                                    <td class="text-center">CAMERA</td>
+                                    <td class="text-center">REGION</td>
+                                    <td class="text-center">LOCATION</td>
+                                    <td class="text-center">PRIORITY</td>
+                                    <td class="text-center">FRAMES</td>
+                                    <td class="text-center">TAGS</td>
+                                    <td class="text-center">ALERTS</td>
+                                </tr>
+                            </thead>
+                            <tbody id="clips-list">
+                                {{ template "clips-list.html" . }}
+                            </tbody>                            
+                        </table>
+                        <form hx-get="actions/load-more-clips?t={{ .ClipsRegion }}&p={{ .ClipsPage }}&s={{ .EventsPageSize }}" hx-target="#clips-list" hx-swap="beforeend" hx-indicator="#spinner">
+                            <button type="submit" class="btn btn-primary">
+                                <span class="spinner-border spinner-border-sm htmx-indicator" id="spinner" role="status" aria-hidden="true"></span>
+                                Load More    
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </body>
+</html>

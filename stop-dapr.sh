@@ -8,5 +8,5 @@ lsof -i:8084 | grep alert | awk '{print $2}' | xargs kill &&
 lsof -i:8085 | grep alert | awk '{print $2}' | xargs kill &&
 lsof -i:8086 | grep alert | awk '{print $2}' | xargs kill &&
 lsof -i:8087 | grep media | awk '{print $2}' | xargs kill &&
-lsof -i:3000 | grep main | awk '{print $2}' | xargs kill
+lsof -i:8088 | grep media | awk '{print $2}' | xargs kill
 

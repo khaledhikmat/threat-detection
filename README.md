@@ -57,12 +57,6 @@ To stop a locallY running instance using another terminal session:
 
 ## DAPR
 
-Start Local REDIS container:
-
-```bash
-docker exec -it dapr_redis redis-cli
-```
-
 To run locallY using one terminal session:
 
 ```bash
@@ -74,6 +68,14 @@ To stop a locallY running instance using another terminal session:
 ./stop-dapr
 ```
 
+## Redis
+
+Start Local REDIS container:
+
+```bash
+docker exec -it dapr_redis redis-cli
+```
+
 ## SQLLite
 
 ```bash
@@ -83,6 +85,24 @@ brew install sqlite-utils
 
 [https://earthly.dev/blog/golang-sqlite/](https://earthly.dev/blog/golang-sqlite/)
 [https://www.allhandsontech.com/programming/golang/how-to-use-sqlite-with-go/](https://www.allhandsontech.com/programming/golang/how-to-use-sqlite-with-go/)
+
+## Cleanup
+
+To cleanup all resources in `Redis`:
+
+```bash
+FLUSHALL
+```
+
+To cleanup all resources in `SQLLite`:
+
+```bash
+cd <project-root>/db
+rm clips.db
+```
+
+To cleanup all resources in `AWS S3`, login to the console portal and cleanup bucket items ma manually.
+
 
 
 

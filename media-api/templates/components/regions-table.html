@@ -1,0 +1,35 @@
+<div class="card" id="regions-table">
+    <div class="card-header">
+        Regions List - {{ .RegionCurrDays }} Days
+    </div>
+    <div class="card-body">
+        <p class="small text-danger">{{ .Error }}</p>
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <td>REGION</td>
+                    <td class="text-center">CAMERAS</td>
+                    <td class="text-center">CLIPS</td>
+                    <td class="text-center">FRAMES</td>
+                    <td class="text-center">TAGS</td>
+                    <td class="text-center">ALERTS</td>
+                    <td></td>
+                </tr>
+            </thead>
+            <tbody id="regions-list">
+                {{ range .Regions }}
+                <tr>
+                    <td>
+                        <a href="/clips?t={{ .Region }}" class="btn btn-sm btn-primary">{{ .Region }}</a>
+                    </td>
+                    <td class="text-center">{{ .Cameras }}</td>
+                    <td class="text-center">{{ .Clips }}</td>
+                    <td class="text-center">{{ .Frames }}</td>
+                    <td class="text-center">{{ .Tags }}</td>
+                    <td class="text-center">{{ .Alerts }}</td>
+                </tr>
+                {{ end }}
+            </tbody>
+        </table>
+    </div>
+</div>

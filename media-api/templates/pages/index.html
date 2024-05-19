@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        {{ template "meta.html" . }}
+        <title>Video Threat Detection</title>
+    </head>
+    <body>
+        <!-- WARNING: Empirically this has to be at the page (not component) level to work -->
+        <!-- <div hx-sse="connect:/actions/stream-events">
+            <div hx-target="#regions-table"
+                hx-swap="innerHTML"
+                hx-trigger="sse:count-update"
+                hx-get="/actions/refresh-regions?d={{ .RegionCurrDays }}"
+                > 
+            </div>
+        </div> -->
+
+        <div class="container">
+            {{ template "navbar.html" . }}
+
+            <div class="row mt-4 g-4">
+                <div class="col">
+                    <div class="card">
+                        <div class="card-body">
+                            <p class="text-header">All Clips</p>
+                            <p class="text-center"><span id="allClips" class="badge bg-primary">{{ .AllClipsCount }}</span></p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="card">
+                        <div class="card-body">
+                            <p class="text-header">Last 1 Day Clips</p>
+                            <p class="text-center"><span id="period1Clips" class="badge bg-primary">{{ .P1ClipsCount }}</span></p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="card">
+                        <div class="card-body">
+                            <p class="text-header">Last 3 Day Clips</p>
+                            <p class="text-center"><span id="period3Clips" class="badge bg-primary">{{ .P3ClipsCount }}</span></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row mt-4 g-4">
+                <div class="col-12">
+                    {{ template "regions-table.html" . }}    
+                </div>
+            </div>
+        </div>
+    </body>
+
+    <!-- Need to execute after the page loads -->
+    <!-- <script>
+        const allClipsCount = document.getElementById("allClips");
+        const period1ClipsCount = document.getElementById("period1Clips");
+        const period3ClipsCount = document.getElementById("period3Clips");
+
+        const es = new EventSource("/actions/stream-clips");
+        es.onerror = (err) => {
+            console.log("onerror", err);
+        };
+
+        es.onmessage = (msg) => {
+            console.log("onmessage", msg);
+        };
+
+        es.onopen = (...args) => {
+            console.log("onopen", args);
+        };
+
+        // When a count_update SSE is received, update the counts
+        es.addEventListener("count_update", (event) => {
+            console.log("Received SSE event...", event);
+            const parsedData = JSON.parse(event.data);
+            allClipsCount.innerText = parsedData.data.allClips;
+            period1ClipsCount.innerText = parsedData.data.period1Clips;
+            period3ClipsCount.innerText = parsedData.data.period3Clips;
+        });
+    </script> -->
+</html>
