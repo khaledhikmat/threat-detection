@@ -47,7 +47,7 @@ func fire(ctx context.Context, clip equates.RecordingClip) error {
 	}
 
 	// Always publish to the metadata topic
-	fmt.Printf("fire model invoker publishes metadata: %s - rags: %d\n", clip.LocalReference, len(clip.Tags))
+	fmt.Printf("fire model invoker publishes metadata: %s - tags: %d\n", clip.LocalReference, len(clip.Tags))
 	err = publisherSvc.PublishRecordingClip(ctx, equates.ThreatDetectionPubSub, equates.MetadataTopic, clip)
 	if err != nil {
 		fmt.Printf("fire model invoker is unable to publish event to the metadata topic: %s %v\n", clip.LocalReference, err)
