@@ -110,6 +110,7 @@ These should go in the `.env` file:
 ```bash
 AWS_ACCESS_KEY_ID="<your-key>"
 AWS_SECRET_ACCESS_KEY="<your-key>"
+AWS_CHCKET_PREFIX="something"
 SQLLITE_FILE_PATH="<your-path>/db/clips.db" 
 ```
 
