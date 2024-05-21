@@ -128,7 +128,7 @@ func indexerHandler(ctx context.Context, e *common.TopicEvent) (bool, error) {
 	}
 
 	err = fn(ctx, evt)
-	if err != nil && err.Error() != "IGNORE error" {
+	if err != nil {
 		fmt.Printf("Index processor returned an error %s\n", err.Error())
 		return false, err
 	}

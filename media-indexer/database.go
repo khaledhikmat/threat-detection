@@ -14,7 +14,7 @@ func database(_ context.Context, clip equates.RecordingClip) error {
 
 	// Store clip in database
 	err := persistenceSvc.NewClip(clip)
-	if err != nil {
+	if err != nil && err.Error() != "IGNORE error" {
 		fmt.Printf("database media indexer failed to store clip in database - %s\n", err.Error())
 		return err
 	}
