@@ -25,6 +25,13 @@ func main() {
 		panic(err)
 	}
 
+	if os.Getenv("SQLLITE_FILE_PATH") == "" {
+		fmt.Printf("Failed to start - %s env var is required\n", "SQLLITE_FILE_PATH")
+		return
+	}
+
+	fmt.Printf("***** 💰 SQLLITE file path: %s\n", os.Getenv("SQLLITE_FILE_PATH"))
+
 	if os.Getenv("APP_PORT") == "" {
 		fmt.Printf("Failed to start - %s env var is required\n", "APP_PORT")
 		return

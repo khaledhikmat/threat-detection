@@ -10,6 +10,10 @@ spec:
     value: localhost:6379
   - name: redisPassword
     value: ""
+  # Disable re-delivery as I am seeing duplicate messages
+  # https://stackoverflow.com/questions/73444639/duplications-in-running-dapr-events
+  - name: redeliverInterval
+    value: "0"
   # Do not include a consumer group so that the DAPR runtime sets it to APPID
   - name: enableTLS
     value: "false"

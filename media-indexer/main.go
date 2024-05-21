@@ -49,10 +49,17 @@ func main() {
 		return
 	}
 
+	if os.Getenv("SQLLITE_FILE_PATH") == "" {
+		fmt.Printf("Failed to start - %s env var is required\n", "SQLLITE_FILE_PATH")
+		return
+	}
+
 	if os.Getenv("APP_PORT") == "" {
 		fmt.Printf("Failed to start - %s env var is required\n", "APP_PORT")
 		return
 	}
+
+	fmt.Printf("***** 💰 SQLLITE file path: %s\n", os.Getenv("SQLLITE_FILE_PATH"))
 
 	// Setup services
 	configData := fsdata.GetEmbeddedConfigData()
@@ -121,7 +128,7 @@ func indexerHandler(ctx context.Context, e *common.TopicEvent) (bool, error) {
 	}
 
 	err = fn(ctx, evt)
-	if err != nil {
+	if err != nil && err.Error() != "IGNORE error" {
 		fmt.Printf("Index processor returned an error %s\n", err.Error())
 		return false, err
 	}
