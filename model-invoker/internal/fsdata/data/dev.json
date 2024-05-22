@@ -1,5 +1,0 @@
-{
-    "publisherProvider": "dapr",
-    "fileStorageProvider": "aws",
-    "keyValStorageProvider": "dapr"
-}

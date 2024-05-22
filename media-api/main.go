@@ -11,7 +11,6 @@ import (
 
 	"github.com/khaledhikmat/threat-detection-shared/service/config"
 	"github.com/khaledhikmat/threat-detection-shared/service/persistence"
-	"github.com/khaledhikmat/threat-detection/media-api/internal/fsdata"
 	"github.com/khaledhikmat/threat-detection/media-api/server"
 )
 
@@ -31,8 +30,7 @@ func main() {
 	}
 
 	// Setup services
-	configData := fsdata.GetEmbeddedConfigData()
-	configSvc := config.New(configData)
+	configSvc := config.New()
 	persistenceSvc := persistence.New(configSvc)
 
 	// Inject into server

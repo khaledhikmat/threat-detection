@@ -18,7 +18,6 @@ import (
 	"github.com/khaledhikmat/threat-detection-shared/service/storage"
 
 	"github.com/khaledhikmat/threat-detection/camera-stream-capturer/agent"
-	"github.com/khaledhikmat/threat-detection/camera-stream-capturer/internal/fsdata"
 )
 
 var (
@@ -46,8 +45,7 @@ func main() {
 	}
 
 	// Setup services
-	configData := fsdata.GetEmbeddedConfigData()
-	configSvc := config.New(configData)
+	configSvc := config.New()
 	soicatSvc := soicat.New()
 	capturerSvc := capturer.New()
 

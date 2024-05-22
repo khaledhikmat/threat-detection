@@ -1,8 +1,0 @@
-{
-    "capturer": {
-        "agentMode": "files",
-        "maxCameras": 3,
-        "recordingsFolder": "./data/recordings",
-        "samplesFolder": "./data/samples"
-    }
-}

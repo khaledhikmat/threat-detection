@@ -19,7 +19,6 @@ import (
 
 	"github.com/khaledhikmat/threat-detection-shared/service/config"
 	"github.com/khaledhikmat/threat-detection-shared/service/persistence"
-	"github.com/khaledhikmat/threat-detection/media-indexer/internal/fsdata"
 )
 
 var metadataTopicSubscription = &common.Subscription{
@@ -57,8 +56,7 @@ func main() {
 	}
 
 	// Setup services
-	configData := fsdata.GetEmbeddedConfigData()
-	configSvc = config.New(configData)
+	configSvc = config.New()
 	persistenceSvc = persistence.New(configSvc)
 
 	fn, ok := modeProcs[configSvc.GetRuntime()]

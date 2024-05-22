@@ -19,7 +19,6 @@ import (
 
 	"github.com/khaledhikmat/threat-detection-shared/service/config"
 	"github.com/khaledhikmat/threat-detection-shared/service/storage"
-	"github.com/khaledhikmat/threat-detection/alert-notifier/internal/fsdata"
 )
 
 var alertTopicSubscription = &common.Subscription{
@@ -61,8 +60,7 @@ func main() {
 	}
 
 	// Setup services
-	configData := fsdata.GetEmbeddedConfigData()
-	configSvc = config.New(configData)
+	configSvc = config.New()
 
 	fn, ok := modeProcs[configSvc.GetRuntime()]
 	if !ok {
