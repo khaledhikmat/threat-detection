@@ -14,9 +14,6 @@ func homeRoutes(_ context.Context, r *gin.Engine) {
 	//=========================
 	r.GET("/", func(c *gin.Context) {
 		target := "index.html"
-		if c.GetHeader("HX-Request") == "true" {
-			target = "campaigns-list.html"
-		}
 
 		d, e := strconv.Atoi(c.Query("d"))
 		if e != nil {
