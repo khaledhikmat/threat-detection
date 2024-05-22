@@ -8,7 +8,7 @@ import (
 	"os/signal"
 
 	"github.com/joho/godotenv"
-	"github.com/khaledhikmat/threat-detection-shared/equates"
+	"github.com/khaledhikmat/threat-detection-shared/models"
 	"github.com/khaledhikmat/threat-detection-shared/utils"
 
 	"github.com/mitchellh/mapstructure"
@@ -23,24 +23,26 @@ import (
 )
 
 var metadataTopicSubscription = &common.Subscription{
-	PubsubName: equates.ThreatDetectionPubSub,
-	Topic:      equates.MetadataTopic,
-	Route:      fmt.Sprintf("/%s", equates.MetadataTopic),
+	PubsubName: models.ThreatDetectionPubSub,
+	Topic:      models.MetadataTopic,
+	Route:      fmt.Sprintf("/%s", models.MetadataTopic),
 }
 
-// Global DAPR client
-var canxCtx context.Context
-var daprClient dapr.Client
 var configSvc config.IService
 var persistenceSvc persistence.IService
 
-var indexProcs = map[string]func(ctx context.Context, clip equates.RecordingClip) error{
+var modeProcs = map[string]func(ctx context.Context, configSvc config.IService) error{
+	"dapr": daprModeProc,
+	"aws":  awsModeProc,
+}
+
+var indexProcs = map[string]func(ctx context.Context, clip models.RecordingClip) error{
 	"database": database,
 }
 
 func main() {
 	rootCtx := context.Background()
-	canxCtx, _ = signal.NotifyContext(rootCtx, os.Interrupt)
+	canxCtx, _ := signal.NotifyContext(rootCtx, os.Interrupt)
 
 	// Load env vars
 	err := godotenv.Load()
@@ -49,49 +51,43 @@ func main() {
 		return
 	}
 
-	if os.Getenv("SQLLITE_FILE_PATH") == "" {
-		fmt.Printf("Failed to start - %s env var is required\n", "SQLLITE_FILE_PATH")
-		return
-	}
-
 	if os.Getenv("APP_PORT") == "" {
 		fmt.Printf("Failed to start - %s env var is required\n", "APP_PORT")
 		return
 	}
 
-	fmt.Printf("***** 💰 SQLLITE file path: %s\n", os.Getenv("SQLLITE_FILE_PATH"))
-
 	// Setup services
 	configData := fsdata.GetEmbeddedConfigData()
 	configSvc = config.New(configData)
+	persistenceSvc = persistence.New(configSvc)
 
-	if !configSvc.IsDapr() && !configSvc.IsDiagrid() {
-		fmt.Println("This Microservice requires that we run in DAPR or Diagrid mode", err)
+	fn, ok := modeProcs[configSvc.GetRuntime()]
+	if !ok {
+		fmt.Printf("Mode processor %s not supported\n", configSvc.GetRuntime())
 		return
 	}
 
-	var c dapr.Client
-	var s common.Service
-
-	// Create a DAPR client
-	// Must be a global client since it is singleton
-	// Hence it would be injected in actor packages as needed
-	c, err = dapr.NewClient()
+	err = fn(canxCtx, configSvc)
 	if err != nil {
 		fmt.Println("Failed to start dapr client", err)
 		return
 	}
-	daprClient = c
-	defer daprClient.Close()
+}
 
-	persistenceSvc = persistence.New(configSvc)
+func daprModeProc(_ context.Context, configSvc config.IService) error {
+	c, err := dapr.NewClient()
+	if err != nil {
+		fmt.Println("Failed to start dapr client", err)
+		return err
+	}
+	defer c.Close()
 
 	// Create a DAPR service using a hard-coded port (must match make start)
-	s = daprd.NewService(":" + os.Getenv("APP_PORT"))
+	s := daprd.NewService(":" + os.Getenv("APP_PORT"))
 	fmt.Printf("Media Indexer - DAPR Service for %s created!\n", configSvc.GetSupportedMediaIndexType())
 
 	// Register pub/sub metadata topic handler
-	if err := s.AddTopicEventHandler(metadataTopicSubscription, indexerHandler); err != nil {
+	if err := s.AddTopicEventHandler(metadataTopicSubscription, daprIndexerHandler); err != nil {
 		panic(err)
 	}
 	fmt.Printf("Media Indexer - metadata topic handler registered for %s!\n", configSvc.GetSupportedMediaIndexType())
@@ -101,11 +97,13 @@ func main() {
 	if err := s.Start(); err != nil && err != http.ErrServerClosed {
 		panic(err)
 	}
+
+	return nil
 }
 
-func indexerHandler(ctx context.Context, e *common.TopicEvent) (bool, error) {
+func daprIndexerHandler(ctx context.Context, e *common.TopicEvent) (bool, error) {
 	// Decode pledge
-	evt := equates.RecordingClip{}
+	evt := models.RecordingClip{}
 	err := mapstructure.Decode(e.Data, &evt)
 	if err != nil {
 		fmt.Println("Failed to decode event", err)
@@ -134,4 +132,8 @@ func indexerHandler(ctx context.Context, e *common.TopicEvent) (bool, error) {
 	}
 
 	return false, nil
+}
+
+func awsModeProc(ctx context.Context, configSvc config.IService) error {
+	return fmt.Errorf("aws mode not supported")
 }

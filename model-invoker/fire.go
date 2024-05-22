@@ -6,7 +6,7 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/khaledhikmat/threat-detection-shared/equates"
+	"github.com/khaledhikmat/threat-detection-shared/models"
 	"github.com/khaledhikmat/threat-detection-shared/utils"
 )
 
@@ -14,7 +14,7 @@ func init() {
 	rand.Seed(time.Now().UnixNano())
 }
 
-func fire(ctx context.Context, clip equates.RecordingClip) error {
+func fire(ctx context.Context, clip models.RecordingClip) error {
 
 	// Retrieve the recording clip from storage
 	b, err := storageSvc.RetrieveRecordingClip(ctx, clip)
@@ -40,7 +40,7 @@ func fire(ctx context.Context, clip equates.RecordingClip) error {
 		clip.AlertsCount = 1
 		// Publish to the alerts topic
 		fmt.Printf("fire model invoker publishes alert: %s - tags: %d\n", clip.LocalReference, len(clip.Tags))
-		err = publisherSvc.PublishRecordingClip(ctx, equates.ThreatDetectionPubSub, equates.AlertTopic, clip)
+		err = publisherSvc.PublishRecordingClip(ctx, models.ThreatDetectionPubSub, models.AlertTopic, clip)
 		if err != nil {
 			fmt.Printf("fire model invoker is unable to publish event to the alert topic: %s %v\n", clip.LocalReference, err)
 		}
@@ -48,7 +48,7 @@ func fire(ctx context.Context, clip equates.RecordingClip) error {
 
 	// Always publish to the metadata topic
 	fmt.Printf("fire model invoker publishes metadata: %s - tags: %d\n", clip.LocalReference, len(clip.Tags))
-	err = publisherSvc.PublishRecordingClip(ctx, equates.ThreatDetectionPubSub, equates.MetadataTopic, clip)
+	err = publisherSvc.PublishRecordingClip(ctx, models.ThreatDetectionPubSub, models.MetadataTopic, clip)
 	if err != nil {
 		fmt.Printf("fire model invoker is unable to publish event to the metadata topic: %s %v\n", clip.LocalReference, err)
 	}

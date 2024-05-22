@@ -10,7 +10,7 @@ import (
 	dapr "github.com/dapr/go-sdk/client"
 	"github.com/joho/godotenv"
 
-	"github.com/khaledhikmat/threat-detection-shared/equates"
+	"github.com/khaledhikmat/threat-detection-shared/models"
 	"github.com/khaledhikmat/threat-detection-shared/service/capturer"
 	"github.com/khaledhikmat/threat-detection-shared/service/config"
 	"github.com/khaledhikmat/threat-detection-shared/service/publisher"
@@ -21,13 +21,16 @@ import (
 	"github.com/khaledhikmat/threat-detection/camera-stream-capturer/internal/fsdata"
 )
 
-// TODO:
-// - Need to create a nested context to allow the stopping of agents.
 var (
 	activeAgents  = 0 //TODO: Needs an atomic counter
 	agentCommands map[string]chan string
 	daprClient    dapr.Client
 )
+
+var modeProcs = map[string]func(ctx context.Context, configSvc config.IService) (dapr.Client, publisher.IService, storage.IService, error){
+	"dapr": daprModeProc,
+	"aws":  awsModeProc,
+}
 
 func main() {
 	capturerName := "capturer1" // TODO: read from the pod
@@ -44,24 +47,25 @@ func main() {
 
 	// Setup services
 	configData := fsdata.GetEmbeddedConfigData()
-	configsvc := config.New(configData)
-	soicatsvc := soicat.New()
-	capturersvc := capturer.New()
+	configSvc := config.New(configData)
+	soicatSvc := soicat.New()
+	capturerSvc := capturer.New()
 
-	if configsvc.IsDapr() || configsvc.IsDiagrid() {
-		// Create a DAPR client
-		// Must be a global client since it is singleton
-		// Hence it would be injected in actor packages as needed
-		daprClient, err = dapr.NewClient()
-		if err != nil {
-			fmt.Println("Failed to start dapr client", err)
-			return
-		}
-		defer daprClient.Close()
+	fn, ok := modeProcs[configSvc.GetRuntime()]
+	if !ok {
+		fmt.Printf("Mode processor %s not supported\n", configSvc.GetRuntime())
+		return
 	}
 
-	publishersvc := publisher.New(daprClient, configsvc)
-	storagesvc := storage.New(daprClient, configsvc)
+	c, publisherSvc, storageSvc, err := fn(canxCtx, configSvc)
+	if err != nil {
+		fmt.Println("Failed to start dapr client", err)
+		return
+	}
+
+	// DAPR client must be global
+	daprClient = c
+	defer daprClient.Close()
 
 	// Run a discovery processor to grab camera agents
 	go func() {
@@ -72,15 +76,15 @@ func main() {
 				return
 			case <-time.After(time.Duration(10 * time.Second)): // TODO: Need a backoff time
 				fmt.Printf("capturer %s discovery processor timeout to grab camera agents....\n", capturerName)
-				agents, err := agents(capturerName, soicatsvc, capturersvc)
+				agents, err := agents(capturerName, soicatSvc, capturerSvc)
 				if err != nil {
 					fmt.Printf("capturer %s discovery processor error: %v\n", capturerName, err)
 					continue
 				}
 
 				for _, c := range agents {
-					if activeAgents < configsvc.GetCapturer().MaxCameras {
-						err = soicatsvc.UpdateCamera(c) //TODO: not enough ...we might run into a race condition
+					if activeAgents < configSvc.GetCapturer().MaxCameras {
+						err = soicatSvc.UpdateCamera(c) //TODO: not enough ...we might run into a race condition
 						if err != nil {
 							fmt.Printf("capturer %s discovery processor error: %v\n", capturerName, err)
 							continue
@@ -93,7 +97,7 @@ func main() {
 							fmt.Printf("capturer %s discovery processor agent %s - starting....\n", capturerName, c.Name)
 							defer close(agentCommands[c.Name])
 
-							agentErr := agent.Run(canxCtx, configsvc, storagesvc, publishersvc, agentCommands[c.Name], capturerName, c)
+							agentErr := agent.Run(canxCtx, configSvc, storageSvc, publisherSvc, agentCommands[c.Name], capturerName, c)
 							if agentErr != nil {
 								fmt.Printf("capturer %s discovery processor agent: %s - start error: %v\n", capturerName, c.Name, agentErr)
 							}
@@ -123,8 +127,8 @@ func main() {
 		case <-time.After(time.Duration(20 * time.Second)):
 			fmt.Printf("capturer %s heartbeat processor timeout to send heartbeat....\n", capturerName)
 			// Send a heartbeat signal
-			err := storagesvc.StoreKeyValue(canxCtx,
-				equates.ThreatDetectionStateStore,
+			err := storageSvc.StoreKeyValue(canxCtx,
+				models.ThreatDetectionStateStore,
 				fmt.Sprintf("%s_%s", "heartbeat", capturerName),
 				fmt.Sprintf("%s_%d", time.Now().UTC().Format("2006-01-02 15:04:05"), activeAgents))
 			if err != nil {
@@ -166,4 +170,21 @@ func agents(capturerName string, soicatsvc soicat.IService, capturersvc capturer
 	}
 
 	return agents, err
+}
+
+func daprModeProc(_ context.Context, configSvc config.IService) (dapr.Client, publisher.IService, storage.IService, error) {
+	c, err := dapr.NewClient()
+	if err != nil {
+		fmt.Println("Failed to start dapr client", err)
+		return nil, nil, nil, err
+	}
+
+	publisherSvc := publisher.New(c, configSvc)
+	storageSvc := storage.New(c, configSvc)
+
+	return c, publisherSvc, storageSvc, nil
+}
+
+func awsModeProc(_ context.Context, _ config.IService) (dapr.Client, publisher.IService, storage.IService, error) {
+	return nil, nil, nil, fmt.Errorf("aws mode not supported")
 }

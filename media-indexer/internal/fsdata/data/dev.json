@@ -1,16 +1,2 @@
 {
-    "publisherProvider": "dapr",
-    "fileStorageProvider": "aws",
-    "keyValStorageProvider": "dapr",
-    "indexProvider": "sqllite",
-    "cloudStorageProviders": {
-        "aws": {
-            "accessKeyEnvVar": "aws_s3_access_key",
-            "accessKey": "your access key here"
-        },
-        "azure": {
-            "accessKeyEnvVar": "azure_storage_access_key",
-            "accessKey": "your access key here"
-        }
-    }
 }

@@ -4,10 +4,10 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/khaledhikmat/threat-detection-shared/equates"
+	"github.com/khaledhikmat/threat-detection-shared/models"
 )
 
-func slack(ctx context.Context, clip equates.RecordingClip) error {
+func slack(ctx context.Context, clip models.RecordingClip) error {
 
 	// Retrieve the recording clip from storage
 	b, err := storageSvc.RetrieveRecordingClip(ctx, clip)

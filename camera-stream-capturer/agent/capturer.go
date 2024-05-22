@@ -10,7 +10,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/yapingcat/gomedia/go-mp4"
 
-	"github.com/khaledhikmat/threat-detection-shared/equates"
+	"github.com/khaledhikmat/threat-detection-shared/models"
 	"github.com/khaledhikmat/threat-detection-shared/service/config"
 	"github.com/khaledhikmat/threat-detection-shared/service/soicat"
 )
@@ -19,7 +19,7 @@ func CaptureStream(canxCtx context.Context,
 	configsvc config.IService,
 	errorsStream chan interface{},
 	packetsStream chan Packet,
-	storageStream chan equates.RecordingClip,
+	storageStream chan models.RecordingClip,
 	capturer string,
 	camera soicat.Camera) {
 	var file *os.File
@@ -95,7 +95,7 @@ func CaptureStream(canxCtx context.Context,
 					file.Close()
 
 					// Send the recording clip via the storage stream
-					storageStream <- equates.RecordingClip{
+					storageStream <- models.RecordingClip{
 						ID:                uuid.NewString(),
 						LocalReference:    fmt.Sprintf("%s/%s/%s", configsvc.GetCapturer().RecordingsFolder, camera.Name, file.Name()),
 						CloudReference:    "",
@@ -108,8 +108,8 @@ func CaptureStream(canxCtx context.Context,
 						AlertTypes:        camera.AlertTypes,
 						MediaIndexerTypes: camera.MediaIndexerTypes,
 						Frames:            frames,
-						BeginTime:         recordingStartTS.Format(equates.Layout),
-						EndTime:           time.Now().Format(equates.Layout),
+						BeginTime:         recordingStartTS.Format(models.Layout),
+						EndTime:           time.Now().Format(models.Layout),
 					}
 
 					// Remove the file reference

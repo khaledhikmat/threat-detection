@@ -24,19 +24,12 @@ dockerize: clean_dist clean_build test build
 	docker buildx build --platform linux/amd64 -t khaledhikmat/threat-detection-media-indexer:latest ./media-indexer -f ./media-indexer/Dockerfile
 	docker buildx build --platform linux/amd64 -t khaledhikmat/threat-detection-api:latest ./api-f ./api/Dockerfile
 
-start-dapr: clean_dist clean_build test
+start: clean_dist clean_build test
 	dapr run -f .
-
-start-diagrid: clean_dist clean_build test
-	export THREAT_DETECTION_MODE="diagrid" && diagrid dev start -f dev-eagle-threat-detection.yaml
 
 list: 
 	dapr list
 
-stop-dapr: 
+stop: 
 	#./stop-dpar.sh
-	unset THREAT_DETECTION_MODE && dapr stop -f . && (lsof -i:8080 | grep main) | awk '{print $2}' | xargs kill && (lsof -i:8081 | grep main) | awk '{print $2}' | xargs kill && (lsof -i:8082 | grep main) | awk '{print $2}' | xargs kill && (lsof -i:8083 | grep main) | awk '{print $2}' | xargs kill && (lsof -i:3000 | grep main) | awk '{print $2}' | xargs kill
-
-stop-diagrid: 
-	#./stop-diagrid.sh
-	unset THREAT_DETECTION_MODE && diagrid dev stop -f dev-eagle-threat-detection.yaml && (lsof -i:8080 | grep main) | awk '{print $2}' | xargs kill && (lsof -i:8081 | grep main) | awk '{print $2}' | xargs kill && (lsof -i:8082 | grep main) | awk '{print $2}' | xargs kill && (lsof -i:8083 | grep main) | awk '{print $2}' | xargs kill && (lsof -i:3000 | grep main) | awk '{print $2}' | xargs kill
+	dapr stop -f . && (lsof -i:8080 | grep main) | awk '{print $2}' | xargs kill && (lsof -i:8081 | grep main) | awk '{print $2}' | xargs kill && (lsof -i:8082 | grep main) | awk '{print $2}' | xargs kill && (lsof -i:8083 | grep main) | awk '{print $2}' | xargs kill && (lsof -i:3000 | grep main) | awk '{print $2}' | xargs kill

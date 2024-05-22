@@ -4,10 +4,10 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/khaledhikmat/threat-detection-shared/equates"
+	"github.com/khaledhikmat/threat-detection-shared/models"
 )
 
-func database(_ context.Context, clip equates.RecordingClip) error {
+func database(_ context.Context, clip models.RecordingClip) error {
 
 	fmt.Printf("database media indexer received a recording clip - TYPE %s - CLOUD REF %s - PROVIDER %s - CAPTURER %s - AGENT %s\n",
 		configSvc.GetSupportedMediaIndexType(), clip.CloudReference, clip.StorageProvider, clip.Capturer, clip.Camera)

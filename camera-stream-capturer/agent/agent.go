@@ -10,7 +10,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/khaledhikmat/threat-detection-shared/equates"
+	"github.com/khaledhikmat/threat-detection-shared/models"
 	"github.com/khaledhikmat/threat-detection-shared/service/config"
 	"github.com/khaledhikmat/threat-detection-shared/service/publisher"
 	"github.com/khaledhikmat/threat-detection-shared/service/soicat"
@@ -43,7 +43,7 @@ func Run(canxCtx context.Context, configsvc config.IService, storagesvc storage.
 
 func runStreaming(canxCtx context.Context,
 	configsvc config.IService,
-	recordingStream chan equates.RecordingClip,
+	recordingStream chan models.RecordingClip,
 	commandsStream chan string,
 	capturer string,
 	camera soicat.Camera) error {
@@ -131,7 +131,7 @@ func runStreaming(canxCtx context.Context,
 	}
 }
 
-func runFiles(canxCtx context.Context, configsvc config.IService, recordingStream chan equates.RecordingClip, commandsStream chan string, capturer string, camera soicat.Camera) error {
+func runFiles(canxCtx context.Context, configsvc config.IService, recordingStream chan models.RecordingClip, commandsStream chan string, capturer string, camera soicat.Camera) error {
 	mode := "files"
 
 	// Capture errors
@@ -193,9 +193,9 @@ func captureErrors(canxCtx context.Context, capturer string, camera soicat.Camer
 func captureRecordingClip(canxCtx context.Context,
 	configsvc config.IService,
 	storagesvc storage.IService,
-	publishersvc publisher.IService) chan equates.RecordingClip {
+	publishersvc publisher.IService) chan models.RecordingClip {
 	// Create a recording stream
-	recordingStream := make(chan equates.RecordingClip, 10)
+	recordingStream := make(chan models.RecordingClip, 10)
 
 	go func() {
 		defer close(recordingStream)
@@ -212,15 +212,15 @@ func captureRecordingClip(canxCtx context.Context,
 				// Upload to Cloud Storage i.e. S3, Azure Storage, etc
 				url, err := storagesvc.StoreRecordingClip(canxCtx, recording)
 				if err != nil {
-					fmt.Printf("unable to store recording clip: %s in %s due to: %v\n", recording.LocalReference, configsvc.GetFileStorageProvider(), err)
+					fmt.Printf("unable to store recording clip: %s in %s due to: %v\n", recording.LocalReference, configsvc.GetRuntime(), err)
 				}
 				recording.CloudReference = url
-				recording.StorageProvider = configsvc.GetFileStorageProvider()
-				fmt.Printf("Uploaded %s to %s => %s\n", recording.LocalReference, configsvc.GetFileStorageProvider(), recording.CloudReference)
+				recording.StorageProvider = configsvc.GetRuntime()
+				fmt.Printf("Uploaded %s to %s => %s\n", recording.LocalReference, configsvc.GetRuntime(), recording.CloudReference)
 
 				// Publish event
 				fmt.Printf("Publishing %s recording clip\n", recording.CloudReference)
-				err = publishersvc.PublishRecordingClip(canxCtx, equates.ThreatDetectionPubSub, equates.RecordingsTopic, recording)
+				err = publishersvc.PublishRecordingClip(canxCtx, models.ThreatDetectionPubSub, models.RecordingsTopic, recording)
 				if err != nil {
 					fmt.Printf("unable to publish event: %s %v\n", recording.LocalReference, err)
 				}
@@ -238,7 +238,7 @@ func captureRecordingClip(canxCtx context.Context,
 	return recordingStream
 }
 
-func produceClip(recordingStream chan equates.RecordingClip,
+func produceClip(recordingStream chan models.RecordingClip,
 	configsvc config.IService,
 	samplesFolder, recordingsFolder string,
 	capturer string,
@@ -274,11 +274,11 @@ func produceClip(recordingStream chan equates.RecordingClip,
 	}
 
 	// Send the recording clip via the storage stream
-	recordingStream <- equates.RecordingClip{
+	recordingStream <- models.RecordingClip{
 		ID:                uuid.NewString(),
 		LocalReference:    destination.Name(),
 		CloudReference:    "",
-		StorageProvider:   configsvc.GetFileStorageProvider(),
+		StorageProvider:   configsvc.GetRuntime(),
 		Capturer:          capturer,
 		Camera:            camera.Name,
 		Region:            camera.Region,
@@ -288,8 +288,8 @@ func produceClip(recordingStream chan equates.RecordingClip,
 		AlertTypes:        camera.AlertTypes,
 		MediaIndexerTypes: camera.MediaIndexerTypes,
 		Frames:            122,
-		BeginTime:         time.Now().Add(-3 * time.Second).Format(equates.Layout),
-		EndTime:           time.Now().Format(equates.Layout),
+		BeginTime:         time.Now().Add(-3 * time.Second).Format(models.Layout),
+		EndTime:           time.Now().Format(models.Layout),
 	}
 
 	return nil
