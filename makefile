@@ -11,18 +11,28 @@ test:
 	echo "Invoking test cases..."
 
 build: clean_dist clean_build test
-	GOOS='linux' GOARCH='amd64' GO111MODULE='on' go build -o "${BUILD_DIR}/threat-detection/camera-stream-capturer" ./camera-stream-capturer/main.go
-	GOOS='linux' GOARCH='amd64' GO111MODULE='on' go build -o "${BUILD_DIR}/threat-detection/model-invoker" ./model-invoker/main.go
-	GOOS='linux' GOARCH='amd64' GO111MODULE='on' go build -o "${BUILD_DIR}/threat-detection/alert-notifier" ./alert-notifier/main.go
-	GOOS='linux' GOARCH='amd64' GO111MODULE='on' go build -o "${BUILD_DIR}/threat-detection/media-indexer" ./media-indexer/main.go
-	GOOS='linux' GOARCH='amd64' GO111MODULE='on' go build -o "${BUILD_DIR}/threat-detection/media-api" ./api/main.go
+	# For now, we are only building the camera-stream-capturer using the ARM64 architecture
+	# This is because the camera-stream-capturer is the only component that is dependent on CGO and C libs
+	CGO_ENABLED=1 GOOS='darwin' GOARCH='arm64' GO111MODULE='on' go build -o "${BUILD_DIR}/threat-detection-camera-stream-capturer" ./camera-stream-capturer/.
+	GOOS='linux' GOARCH='amd64' GO111MODULE='on' go build -o "${BUILD_DIR}/threat-detection-model-invoker" ./model-invoker/.
+	GOOS='linux' GOARCH='amd64' GO111MODULE='on' go build -o "${BUILD_DIR}/threat-detection-alert-notifier" ./alert-notifier/.
+	GOOS='linux' GOARCH='amd64' GO111MODULE='on' go build -o "${BUILD_DIR}/threat-detection-media-indexer" ./media-indexer/.
+	GOOS='linux' GOARCH='amd64' GO111MODULE='on' go build -o "${BUILD_DIR}/threat-detection-media-api" ./media-api/.
 
 dockerize: clean_dist clean_build test build
-	docker buildx build --platform linux/amd64 -t khaledhikmat/threat-detection/camera-stream-capturer:latest ./camera-stream-capturer -f ./camera-stream-capturer/Dockerfile
-	docker buildx build --platform linux/amd64 -t khaledhikmat/threat-detection/model-invoker:latest ./model-invoker -f ./model-invoker/Dockerfile
-	docker buildx build --platform linux/amd64 -t khaledhikmat/threat-detection/alert-notifier:latest ./alert-notifier -f ./alert-notifier/Dockerfile
-	docker buildx build --platform linux/amd64 -t khaledhikmat/threat-detection/media-indexer:latest ./media-indexer -f ./media-indexer/Dockerfile
-	docker buildx build --platform linux/amd64 -t khaledhikmat/threat-detection/media-api:latest ./api-f ./media-api/Dockerfile
+	docker buildx build --platform linux/amd64 -t khaledhikmat/threat-detection-camera-stream-capturer:latest ./camera-stream-capturer -f ./camera-stream-capturer/Dockerfile
+	docker buildx build --platform linux/amd64 -t khaledhikmat/threat-detection-model-invoker:latest ./model-invoker -f ./model-invoker/Dockerfile
+	docker buildx build --platform linux/amd64 -t khaledhikmat/threat-detection-alert-notifier:latest ./alert-notifier -f ./alert-notifier/Dockerfile
+	docker buildx build --platform linux/amd64 -t khaledhikmat/threat-detection-media-indexer:latest ./media-indexer -f ./media-indexer/Dockerfile
+	docker buildx build --platform linux/amd64 -t khaledhikmat/threat-detection-media-api:latest ./media-api -f ./media-api/Dockerfile
+
+push-2-hub: clean_dist clean_build test build dockerize
+	docker login
+	docker push khaledhikmat/threat-detection-camera-stream-capturer:latest
+	docker push khaledhikmat/threat-detection-model-invoker:latest	
+	docker push khaledhikmat/threat-detection-alert-notifier:latest
+	docker push khaledhikmat/threat-detection-media-indexer:latest
+	docker push khaledhikmat/threat-detection-media-api:latest
 
 start: clean_dist clean_build test
 	dapr run -f .

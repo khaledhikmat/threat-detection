@@ -118,4 +118,28 @@ AWS_BUCKET_PREFIX="something-unique"
 SQLLITE_FILE_PATH="<your-path>/db/clips.db" 
 ```
 
+## Dockerize
+
+- Merge and tag shared lib (`threat-detection-shared`) i.e. `v1.0.0`:
+    - Assuming we have a working branch i.e. `my-branch`
+    - `git add --all`
+    - `git commit -am "Major stuff..."`
+    - `git push`
+    - `git checkout main`
+    - `git merge my-branch`
+    - `git tag -a v1.0.0 -m "my great work"`
+    - `git tag` to make sure is is created.
+    - `git push --tags` to push tags to Github.
+- In all microservice folders:
+    - `go get -u go get -u github.com/khaledhikmat/threat-detection-shared@v1.0.0`. Replace `v1.0.0` with your actual tag.
+    - `go mod tidy`
+- `make build`  
+- `make dockerize`  
+- `make push-2-hub`. This pushes to a public Docker repo i.e. Docker Hub.
+- Merge and tag as above.
+
+** Please note** that:
+- I have noticed that sometimes that `make push-2-hub` times out. In this case, you have to execute the command one by one 😢.  
+- The image names must be formatted this way: `<accountname>/<image-name>:tag`.
+- The image architecture must be `linux/amd64`. So if you are on MacOS M1/M2 chip, you must instruct Docker to build using amd64 platform: `buildx build --platform linux/amd64`.
 
