@@ -2,10 +2,12 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 
 	"github.com/joho/godotenv"
 	"github.com/khaledhikmat/threat-detection-shared/models"
@@ -19,6 +21,7 @@ import (
 
 	"github.com/khaledhikmat/threat-detection-shared/service/config"
 	"github.com/khaledhikmat/threat-detection-shared/service/persistence"
+	"github.com/khaledhikmat/threat-detection-shared/service/pubsub"
 )
 
 var metadataTopicSubscription = &common.Subscription{
@@ -28,9 +31,12 @@ var metadataTopicSubscription = &common.Subscription{
 }
 
 var configSvc config.IService
+var pubsubSvc pubsub.IService
 var persistenceSvc persistence.IService
 
-var modeProcs = map[string]func(ctx context.Context, configSvc config.IService) error{
+var metadataTopic = models.MetadataTopic
+
+var modeProcs = map[string]func(ctx context.Context) error{
 	"dapr": daprModeProc,
 	"aws":  awsModeProc,
 }
@@ -50,29 +56,29 @@ func main() {
 		return
 	}
 
-	if os.Getenv("APP_PORT") == "" {
-		fmt.Printf("Failed to start - %s env var is required\n", "APP_PORT")
-		return
-	}
-
 	// Setup services
 	configSvc = config.New()
 	persistenceSvc = persistence.New(configSvc)
 
-	fn, ok := modeProcs[configSvc.GetRuntime()]
-	if !ok {
-		fmt.Printf("Mode processor %s not supported\n", configSvc.GetRuntime())
+	if configSvc.GetRuntimeEnv() == "local" && os.Getenv("APP_PORT") == "" {
+		fmt.Printf("Failed to start - %s env var is required\n", "APP_PORT")
 		return
 	}
 
-	err = fn(canxCtx, configSvc)
+	fn, ok := modeProcs[configSvc.GetRuntimeMode()]
+	if !ok {
+		fmt.Printf("Mode processor %s not supported\n", configSvc.GetRuntimeMode())
+		return
+	}
+
+	err = fn(canxCtx)
 	if err != nil {
-		fmt.Println("Failed to start dapr client", err)
+		fmt.Printf("Failed to start mode processor %s %v\n", configSvc.GetRuntimeMode(), err)
 		return
 	}
 }
 
-func daprModeProc(_ context.Context, configSvc config.IService) error {
+func daprModeProc(_ context.Context) error {
 	c, err := dapr.NewClient()
 	if err != nil {
 		fmt.Println("Failed to start dapr client", err)
@@ -80,7 +86,7 @@ func daprModeProc(_ context.Context, configSvc config.IService) error {
 	}
 	defer c.Close()
 
-	// Create a DAPR service using a hard-coded port (must match make start)
+	// Create a DAPR service using the app port
 	s := daprd.NewService(":" + os.Getenv("APP_PORT"))
 	fmt.Printf("Media Indexer - DAPR Service for %s created!\n", configSvc.GetSupportedMediaIndexType())
 
@@ -108,11 +114,65 @@ func daprIndexerHandler(ctx context.Context, e *common.TopicEvent) (bool, error)
 		return false, err
 	}
 
+	return false, processRecordingClip(ctx, evt)
+}
+
+func awsModeProc(ctx context.Context) error {
+	pubsubSvc = pubsub.NewAwsPubsub(configSvc)
+
+	// Create a topic for my metadata if it does not exist
+	// There could be some competition here, but we will ignore it for now
+	// In higher env, queues and topics would be pre-created
+	metadataTopic, err := pubsubSvc.CreateTopic(ctx, models.MetadataTopic)
+	if err != nil {
+		return err
+	}
+
+	// Create a queue for my topic if it does not exist
+	// In higher env, queues and topics would be pre-created
+	queueURL, queueARN, err := pubsubSvc.CreateQueue(ctx, fmt.Sprintf("model-indexer-queue-%s", strings.ToLower(configSvc.GetSupportedMediaIndexType())), metadataTopic)
+	if err != nil {
+		return err
+	}
+
+	// Register a subscription to the metadata topic
+	stream, err := pubsubSvc.Subscribe(ctx, metadataTopic, queueURL, queueARN)
+	if err != nil {
+		return err
+	}
+
+	// Process messages from the subscription stream
+	for msg := range stream {
+		select {
+		case <-ctx.Done():
+			fmt.Println("awsModeProc - context cancelled")
+			break
+		default:
+			// Decode message
+			clip := models.RecordingClip{}
+			err := json.Unmarshal([]byte(msg), &clip)
+			if err != nil {
+				fmt.Println("Record but ignore - Failed to decode event", err)
+				continue
+			}
+
+			err = processRecordingClip(ctx, clip)
+			if err != nil {
+				fmt.Println("Record but ignore - Failed to process event", err)
+			}
+		}
+	}
+
+	return nil
+}
+
+func processRecordingClip(ctx context.Context, evt models.RecordingClip) error {
 	// Determine if my media indexer is required for this clip
+	fmt.Printf("Processing clip %s with indexer types %v and Indexer type %s \n", evt.ID, evt.MediaIndexerTypes, configSvc.GetSupportedMediaIndexType())
 	if evt.MediaIndexerTypes == nil ||
 		!utils.Contains(evt.MediaIndexerTypes, configSvc.GetSupportedMediaIndexType()) {
 		fmt.Printf("Ignoring the clip because our supported index type [%s] is not needed\n", configSvc.GetSupportedMediaIndexType())
-		return false, err
+		return nil
 	}
 
 	fmt.Printf("Processing the clip because our supported index type [%s] is needed\n", configSvc.GetSupportedMediaIndexType())
@@ -120,18 +180,14 @@ func daprIndexerHandler(ctx context.Context, e *common.TopicEvent) (bool, error)
 	fn, ok := indexProcs[configSvc.GetSupportedMediaIndexType()]
 	if !ok {
 		fmt.Printf("Index processor %s not supported\n", configSvc.GetSupportedMediaIndexType())
-		return false, err
+		return fmt.Errorf("Index processor %s not supported", configSvc.GetSupportedMediaIndexType())
 	}
 
-	err = fn(ctx, evt)
+	err := fn(ctx, evt)
 	if err != nil {
 		fmt.Printf("Index processor returned an error %s\n", err.Error())
-		return false, err
+		return err
 	}
 
-	return false, nil
-}
-
-func awsModeProc(ctx context.Context, configSvc config.IService) error {
-	return fmt.Errorf("aws mode not supported")
+	return nil
 }

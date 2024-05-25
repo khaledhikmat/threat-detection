@@ -55,18 +55,22 @@ To stop a locallY running instance using another terminal session:
 ./stop-diagrid
 ```
 
+**Please note** I am no longer supporting Diagrid.
+
 ## DAPR
 
 To run locallY using one terminal session:
 
 ```bash
-make start-dapr
+make start
 ```
 To stop a locallY running instance using another terminal session:
 
 ```bash
-./stop-dapr
+./stop
 ```
+
+**Please note** that I am using DAPR tp orchestrate locally. So instead of using something like Docker compose (which requires that I Dockerize everything), DAPR provides an easu way to start everything although, in AWS mode, I am not using DAPR features.
 
 ## Redis
 

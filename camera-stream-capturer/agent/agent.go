@@ -12,7 +12,7 @@ import (
 
 	"github.com/khaledhikmat/threat-detection-shared/models"
 	"github.com/khaledhikmat/threat-detection-shared/service/config"
-	"github.com/khaledhikmat/threat-detection-shared/service/publisher"
+	"github.com/khaledhikmat/threat-detection-shared/service/pubsub"
 	"github.com/khaledhikmat/threat-detection-shared/service/soicat"
 	"github.com/khaledhikmat/threat-detection-shared/service/storage"
 	"github.com/khaledhikmat/threat-detection-shared/utils"
@@ -23,7 +23,7 @@ func init() {
 }
 
 // There is one agent per camera.
-func Run(canxCtx context.Context, configsvc config.IService, storagesvc storage.IService, publishersvc publisher.IService, commandsStream chan string, capturer string, camera soicat.Camera) error {
+func Run(canxCtx context.Context, configsvc config.IService, storagesvc storage.IService, pubsubsvc pubsub.IService, recordingsTopic string, commandsStream chan string, capturer string, camera soicat.Camera) error {
 
 	// Create a cemra folder within the recordings folder if not exist
 	err := utils.CreateDirIfNotExist(fmt.Sprintf("%s/%s", configsvc.GetCapturer().RecordingsFolder, camera.Name))
@@ -32,7 +32,7 @@ func Run(canxCtx context.Context, configsvc config.IService, storagesvc storage.
 	}
 
 	// Create a recording stream
-	recordingStream := captureRecordingClip(canxCtx, configsvc, storagesvc, publishersvc)
+	recordingStream := captureRecordingClip(canxCtx, configsvc, storagesvc, pubsubsvc, recordingsTopic)
 
 	if configsvc.GetCapturer().AgentMode == "streaming" {
 		return runStreaming(canxCtx, configsvc, recordingStream, commandsStream, capturer, camera)
@@ -193,7 +193,8 @@ func captureErrors(canxCtx context.Context, capturer string, camera soicat.Camer
 func captureRecordingClip(canxCtx context.Context,
 	configsvc config.IService,
 	storagesvc storage.IService,
-	publishersvc publisher.IService) chan models.RecordingClip {
+	pubsubsvc pubsub.IService,
+	recordingsTopic string) chan models.RecordingClip {
 	// Create a recording stream
 	recordingStream := make(chan models.RecordingClip, 10)
 
@@ -212,15 +213,15 @@ func captureRecordingClip(canxCtx context.Context,
 				// Upload to Cloud Storage i.e. S3, Azure Storage, etc
 				url, err := storagesvc.StoreRecordingClip(canxCtx, recording)
 				if err != nil {
-					fmt.Printf("unable to store recording clip: %s in %s due to: %v\n", recording.LocalReference, configsvc.GetRuntime(), err)
+					fmt.Printf("unable to store recording clip: %s in %s due to: %v\n", recording.LocalReference, configsvc.GetRuntimeMode(), err)
 				}
 				recording.CloudReference = url
-				recording.StorageProvider = configsvc.GetRuntime()
-				fmt.Printf("Uploaded %s to %s => %s\n", recording.LocalReference, configsvc.GetRuntime(), recording.CloudReference)
+				recording.StorageProvider = configsvc.GetRuntimeMode()
+				fmt.Printf("Uploaded %s to %s => %s\n", recording.LocalReference, configsvc.GetRuntimeMode(), recording.CloudReference)
 
 				// Publish event
 				fmt.Printf("Publishing %s recording clip\n", recording.CloudReference)
-				err = publishersvc.PublishRecordingClip(canxCtx, models.ThreatDetectionPubSub, models.RecordingsTopic, recording)
+				err = pubsubsvc.PublishRecordingClip(canxCtx, models.ThreatDetectionPubSub, recordingsTopic, recording)
 				if err != nil {
 					fmt.Printf("unable to publish event: %s %v\n", recording.LocalReference, err)
 				}
@@ -278,7 +279,7 @@ func produceClip(recordingStream chan models.RecordingClip,
 		ID:                uuid.NewString(),
 		LocalReference:    destination.Name(),
 		CloudReference:    "",
-		StorageProvider:   configsvc.GetRuntime(),
+		StorageProvider:   configsvc.GetRuntimeMode(),
 		Capturer:          capturer,
 		Camera:            camera.Name,
 		Region:            camera.Region,

@@ -24,11 +24,6 @@ func main() {
 		panic(err)
 	}
 
-	if os.Getenv("APP_PORT") == "" {
-		fmt.Printf("Failed to start - %s env var is required\n", "APP_PORT")
-		return
-	}
-
 	// Setup services
 	configSvc := config.New()
 	persistenceSvc := persistence.New(configSvc)
@@ -36,6 +31,11 @@ func main() {
 	// Inject into server
 	server.ConfigService = configSvc
 	server.PersistenceService = persistenceSvc
+
+	if configSvc.GetRuntimeEnv() == "local" && os.Getenv("APP_PORT") == "" {
+		fmt.Printf("Failed to start - %s env var is required\n", "APP_PORT")
+		return
+	}
 
 	port := os.Getenv("APP_PORT")
 	args := os.Args[1:]

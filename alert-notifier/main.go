@@ -2,10 +2,12 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 
 	"github.com/joho/godotenv"
 	"github.com/khaledhikmat/threat-detection-shared/models"
@@ -18,20 +20,22 @@ import (
 	daprd "github.com/dapr/go-sdk/service/http"
 
 	"github.com/khaledhikmat/threat-detection-shared/service/config"
+	"github.com/khaledhikmat/threat-detection-shared/service/pubsub"
 	"github.com/khaledhikmat/threat-detection-shared/service/storage"
 )
 
 var alertTopicSubscription = &common.Subscription{
 	PubsubName: models.ThreatDetectionPubSub,
-	Topic:      models.AlertTopic,
-	Route:      fmt.Sprintf("/%s", models.AlertTopic),
+	Topic:      models.AlertsTopic,
+	Route:      fmt.Sprintf("/%s", models.AlertsTopic),
 }
 
 // Global DAPR client
 var configSvc config.IService
+var pubsubSvc pubsub.IService
 var storageSvc storage.IService
 
-var modeProcs = map[string]func(ctx context.Context, configSvc config.IService) error{
+var modeProcs = map[string]func(ctx context.Context) error{
 	"dapr": daprModeProc,
 	"aws":  awsModeProc,
 }
@@ -42,6 +46,8 @@ var alertProcs = map[string]func(ctx context.Context, clip models.RecordingClip)
 	"pers":  pers,
 	"slack": slack,
 }
+
+var alertsTopic = models.AlertsTopic
 
 func main() {
 	rootCtx := context.Background()
@@ -54,28 +60,28 @@ func main() {
 		return
 	}
 
-	if os.Getenv("APP_PORT") == "" {
+	// Setup services
+	configSvc = config.New()
+
+	if configSvc.GetRuntimeEnv() == "local" && os.Getenv("APP_PORT") == "" {
 		fmt.Printf("Failed to start - %s env var is required\n", "APP_PORT")
 		return
 	}
 
-	// Setup services
-	configSvc = config.New()
-
-	fn, ok := modeProcs[configSvc.GetRuntime()]
+	fn, ok := modeProcs[configSvc.GetRuntimeMode()]
 	if !ok {
-		fmt.Printf("Mode processor %s not supported\n", configSvc.GetRuntime())
+		fmt.Printf("Mode processor %s not supported\n", configSvc.GetRuntimeMode())
 		return
 	}
 
-	err = fn(canxCtx, configSvc)
+	err = fn(canxCtx)
 	if err != nil {
-		fmt.Println("Failed to start dapr client", err)
+		fmt.Printf("Failed to start mode processor %s %v\n", configSvc.GetRuntimeMode(), err)
 		return
 	}
 }
 
-func daprModeProc(_ context.Context, configSvc config.IService) error {
+func daprModeProc(_ context.Context) error {
 	c, err := dapr.NewClient()
 	if err != nil {
 		fmt.Println("Failed to start dapr client", err)
@@ -83,17 +89,19 @@ func daprModeProc(_ context.Context, configSvc config.IService) error {
 	}
 	defer c.Close()
 
-	storageSvc = storage.New(c, configSvc)
+	// WARNING I am using AWS storage while in DAPR runtime mode because I can store to S3
+	//storageSvc = storage.NewDaprStorage(c, configSvc)
+	storageSvc = storage.NewAwsStorage(configSvc)
 
-	// Create a DAPR service using a hard-coded port (must match make start)
+	// Create a DAPR service using the app port
 	s := daprd.NewService(":" + os.Getenv("APP_PORT"))
-	fmt.Printf("Media Indexer - DAPR Service for %s created!\n", configSvc.GetSupportedAlertType())
+	fmt.Printf("Alerts Notifier - DAPR Service for %s created!\n", configSvc.GetSupportedAlertType())
 
 	// Register pub/sub metadata topic handler
 	if err := s.AddTopicEventHandler(alertTopicSubscription, daprAlertHandler); err != nil {
 		panic(err)
 	}
-	fmt.Printf("Media Indexer - metadata topic handler registered for %s!\n", configSvc.GetSupportedAlertType())
+	fmt.Printf("Alerts Notifier - metadata topic handler registered for %s!\n", configSvc.GetSupportedAlertType())
 
 	// Start DAPR service
 	// TODO: Provide cancellation context
@@ -113,11 +121,66 @@ func daprAlertHandler(ctx context.Context, e *common.TopicEvent) (bool, error) {
 		return false, err
 	}
 
+	return false, processRecordingClip(ctx, evt)
+}
+
+func awsModeProc(ctx context.Context) error {
+	pubsubSvc = pubsub.NewAwsPubsub(configSvc)
+	storageSvc = storage.NewAwsStorage(configSvc)
+
+	// Create a topic for my alerts if it does not exist
+	// There could be some competition here, but we will ignore it for now
+	// In higher env, queues and topics would be pre-created
+	alertsTopic, err := pubsubSvc.CreateTopic(ctx, models.AlertsTopic)
+	if err != nil {
+		return err
+	}
+
+	// Create a queue for my topic if it does not exist
+	// In higher env, queues and topics would be pre-created
+	queueURL, queueARN, err := pubsubSvc.CreateQueue(ctx, fmt.Sprintf("alert-notifier-queue-%s", strings.ToLower(configSvc.GetSupportedAlertType())), alertsTopic)
+	if err != nil {
+		return err
+	}
+
+	// Register a subscription to the metadata topic
+	stream, err := pubsubSvc.Subscribe(ctx, alertsTopic, queueURL, queueARN)
+	if err != nil {
+		return err
+	}
+
+	// Process messages from the subscription stream
+	for msg := range stream {
+		select {
+		case <-ctx.Done():
+			fmt.Println("awsModeProc - context cancelled")
+			break
+		default:
+			// Decode message
+			clip := models.RecordingClip{}
+			err := json.Unmarshal([]byte(msg), &clip)
+			if err != nil {
+				fmt.Println("Record but ignore - Failed to decode event", err)
+				continue
+			}
+
+			err = processRecordingClip(ctx, clip)
+			if err != nil {
+				fmt.Println("Record but ignore - Failed to process event", err)
+			}
+		}
+	}
+
+	return nil
+}
+
+func processRecordingClip(ctx context.Context, evt models.RecordingClip) error {
 	// Determine if my alert notifier is required for this clip
+	fmt.Printf("Processing clip %s with alert types %v and Alert type %s \n", evt.ID, evt.AlertTypes, configSvc.GetSupportedAlertType())
 	if evt.AlertTypes == nil ||
 		!utils.Contains(evt.AlertTypes, configSvc.GetSupportedAlertType()) {
 		fmt.Printf("Ignoring the clip because our supported alert type [%s] is not needed\n", configSvc.GetSupportedAlertType())
-		return false, err
+		return nil
 	}
 
 	fmt.Printf("Processing the clip because our supported alert type [%s] is needed\n", configSvc.GetSupportedAlertType())
@@ -125,18 +188,14 @@ func daprAlertHandler(ctx context.Context, e *common.TopicEvent) (bool, error) {
 	fn, ok := alertProcs[configSvc.GetSupportedAlertType()]
 	if !ok {
 		fmt.Printf("Alert processor %s not supported\n", configSvc.GetSupportedAlertType())
-		return false, err
+		return fmt.Errorf("Alert processor %s not supported", configSvc.GetSupportedAlertType())
 	}
 
-	err = fn(ctx, evt)
+	err := fn(ctx, evt)
 	if err != nil {
 		fmt.Printf("Alert processor returned an error %s\n", err.Error())
-		return false, err
+		return err
 	}
 
-	return false, nil
-}
-
-func awsModeProc(_ context.Context, _ config.IService) error {
-	return fmt.Errorf("aws mode not supported")
+	return nil
 }

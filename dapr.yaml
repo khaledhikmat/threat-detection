@@ -3,7 +3,8 @@ common: # optional section for variables shared across apps
   resourcesPath: deploy/local/components # any dapr resources to be shared across apps
   env:  # any environment variable shared across apps
     DEBUG: true
-    RUN_TIME_MODE: "dapr"
+    RUN_TIME_ENV: "local"
+    RUN_TIME_MODE: "aws"
 apps:
   - appID: threat-detection-camera-stream-capturer
     appDirPath: ./camera-stream-capturer/
