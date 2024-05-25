@@ -86,8 +86,8 @@ apps:
       DAPR_PORT: 3507  
       MEDIA_INDEXER_TYPE: "database" 
       INDEXER_TYPE: "sqllite"
-  - appID: threat-detection-media-api
-    appDirPath: ./media-api/
+  - appID: threat-detection-elastic-media-indexer
+    appDirPath: ./media-indexer/
     appPort: 8088
     daprHTTPPort: 3508
     logLevel: debug
@@ -95,4 +95,15 @@ apps:
     env:
       APP_PORT: 8088  
       DAPR_PORT: 3508  
+      MEDIA_INDEXER_TYPE: "elastic" 
+      INDEXER_TYPE: "opensearch"
+  - appID: threat-detection-media-api
+    appDirPath: ./media-api/
+    appPort: 8089
+    daprHTTPPort: 3509
+    logLevel: debug
+    command: ["go","run", "."]
+    env:
+      APP_PORT: 8089  
+      DAPR_PORT: 3509  
       INDEXER_TYPE: "sqllite"

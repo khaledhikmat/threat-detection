@@ -43,6 +43,7 @@ var modeProcs = map[string]func(ctx context.Context) error{
 
 var indexProcs = map[string]func(ctx context.Context, clip models.RecordingClip) error{
 	"database": database,
+	"elastic":  elastic,
 }
 
 func main() {

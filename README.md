@@ -70,7 +70,7 @@ To stop a locallY running instance using another terminal session:
 ./stop
 ```
 
-**Please note** that I am using DAPR tp orchestrate locally. So instead of using something like Docker compose (which requires that I Dockerize everything), DAPR provides an easu way to start everything although, in AWS mode, I am not using DAPR features.
+**Please note** that I am using DAPR to orchestrate locally. So instead of using something like Docker compose (which requires that I Dockerize everything), DAPR provides an easy way to start all Microservices. This works even if the runtime mode is set to use `aws`.
 
 ## Redis
 
