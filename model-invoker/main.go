@@ -53,15 +53,17 @@ func main() {
 	rootCtx := context.Background()
 	canxCtx, _ := signal.NotifyContext(rootCtx, os.Interrupt)
 
-	// Load env vars
-	err := godotenv.Load()
-	if err != nil {
-		fmt.Println("Failed to start env vars", err)
-		return
-	}
-
 	// Setup services
 	configSvc = config.New()
+
+	// Load env vars if running in local rutime mode
+	if configSvc.GetRuntimeEnv() == "local" {
+		err := godotenv.Load()
+		if err != nil {
+			fmt.Println("Failed to start env vars", err)
+			return
+		}
+	}
 
 	if configSvc.GetRuntimeEnv() == "local" && os.Getenv("APP_PORT") == "" {
 		fmt.Printf("Failed to start - %s env var is required\n", "APP_PORT")
@@ -74,7 +76,7 @@ func main() {
 		return
 	}
 
-	err = fn(canxCtx)
+	err := fn(canxCtx)
 	if err != nil {
 		fmt.Printf("Failed to start mode processor %s %v\n", configSvc.GetRuntimeMode(), err)
 		return

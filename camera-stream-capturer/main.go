@@ -46,16 +46,19 @@ func main() {
 	rootCanx := context.Background()
 	canxCtx, _ := signal.NotifyContext(rootCanx, os.Interrupt)
 
-	// Load env vars
-	err := godotenv.Load()
-	if err != nil {
-		panic(err)
-	}
-
 	// Setup services
 	configSvc = config.New()
 	soicatSvc = soicat.New()
 	capturerSvc = capturer.New()
+
+	// Load env vars if running in local rutime mode
+	if configSvc.GetRuntimeEnv() == "local" {
+		err := godotenv.Load()
+		if err != nil {
+			fmt.Println("Failed to start env vars", err)
+			return
+		}
+	}
 
 	if configSvc.GetRuntimeEnv() == "local" && os.Getenv("APP_PORT") == "" {
 		fmt.Printf("Failed to start - %s env var is required\n", "APP_PORT")
@@ -68,7 +71,7 @@ func main() {
 		return
 	}
 
-	err = fn(canxCtx, capturerName)
+	err := fn(canxCtx, capturerName)
 	if err != nil {
 		fmt.Printf("Failed to start mode processor %s %v\n", configSvc.GetRuntimeMode(), err)
 		return
