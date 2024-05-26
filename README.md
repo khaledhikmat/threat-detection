@@ -16,47 +16,6 @@ To drop modules:
 go work edit -dropuse ./alert-notifier 
 ```
 
-## Diagrid
-
-Generate an API Key
-
-```bash
-diagrid apikeys create --name mykey --role cra.diagrid:admin
-```
-
-Use the generated API Key when HSS remoted:
-
-```bash
-diagrid login --api-key <mykey>
-```
-
-Diagrid needs a declarative subscription to properly route pub/sub events to consumers:
-
-```bash
-diagrid subscription create recordings-pubsub --connection threat-detection-pubsub  --topic recordings-topic --route /recordings-topic --scopes model-invoker
-```
-
-```bash
-diagrid subscription get recordings-pubsub --project eagle-threat-detection
-```
-
-```bash
-diagrid subscription delete recordings-pubsub
-```
-
-To run locallY using one terminal session:
-
-```bash
-make start-diagrid
-```
-To stop a locallY running instance using another terminal session:
-
-```bash
-./stop-diagrid
-```
-
-**Please note** I am no longer supporting Diagrid.
-
 ## DAPR
 
 To run locallY using one terminal session:
