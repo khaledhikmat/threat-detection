@@ -6,6 +6,7 @@ import (
 	"io"
 	"math/rand"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/google/uuid"
@@ -275,13 +276,19 @@ func produceClip(recordingStream chan models.RecordingClip,
 	}
 
 	// Send the recording clip via the storage stream
+	num, err := strconv.Atoi(camera.ID)
+	if err != nil {
+		return fmt.Errorf("capturestream - unable to create a clip %v", err)
+	}
 	recordingStream <- models.RecordingClip{
 		ID:                uuid.NewString(),
+		TimeStamp:         time.Now(),
 		LocalReference:    destination.Name(),
 		CloudReference:    "",
 		StorageProvider:   configsvc.GetRuntimeMode(),
 		Capturer:          capturer,
 		Camera:            camera.Name,
+		CameraID:          num,
 		Region:            camera.Region,
 		Location:          camera.Location,
 		Priority:          camera.Priority,

@@ -17,21 +17,21 @@ func homeRoutes(_ context.Context, r *gin.Engine) {
 
 		d, e := strconv.Atoi(c.Query("d"))
 		if e != nil {
-			d = 1
+			d = 24 * 60
 		}
 
 		regionsError := ""
-		allClips, err := PersistenceService.RetrieveClipCount(-1)
+		allClips, err := PersistenceService.RetrieveClipCount(24 * 60)
 		if err != nil {
 			regionsError = err.Error()
 		}
 
-		p1Clips, err := PersistenceService.RetrieveClipCount(1)
+		p1Clips, err := PersistenceService.RetrieveClipCount(1 * 60)
 		if err != nil {
 			regionsError = err.Error()
 		}
 
-		p3Clips, err := PersistenceService.RetrieveClipCount(3)
+		p3Clips, err := PersistenceService.RetrieveClipCount(3 * 60)
 		if err != nil {
 			regionsError = err.Error()
 		}
@@ -42,14 +42,14 @@ func homeRoutes(_ context.Context, r *gin.Engine) {
 		}
 
 		c.HTML(200, target, gin.H{
-			"Tab":            "Home",
-			"RegionsError":   regionsError,
-			"Regions":        regions,
-			"RegionDays":     fmt.Sprintf("Last %d days", d),
-			"RegionCurrDays": d,
-			"AllClipsCount":  allClips,
-			"P1ClipsCount":   p1Clips,
-			"P3ClipsCount":   p3Clips,
+			"Tab":               "Home",
+			"RegionsError":      regionsError,
+			"Regions":           regions,
+			"RegionPeriods":     fmt.Sprintf("Last %d minutes", d),
+			"RegionCurrPeriods": d,
+			"AllClipsCount":     allClips,
+			"P1ClipsCount":      p1Clips,
+			"P3ClipsCount":      p3Clips,
 		})
 	})
 
@@ -57,6 +57,11 @@ func homeRoutes(_ context.Context, r *gin.Engine) {
 		target := "clips.html"
 		if c.GetHeader("HX-Request") == "true" {
 			target = "clips-list.html"
+		}
+
+		d, e := strconv.Atoi(c.Query("d"))
+		if e != nil {
+			d = 24 * 60
 		}
 
 		p, e := strconv.Atoi(c.Query("p"))
@@ -70,7 +75,7 @@ func homeRoutes(_ context.Context, r *gin.Engine) {
 		}
 
 		clipsError := ""
-		clips, err := PersistenceService.RetrieveClipsByRegion(c.Query("t"), p, s)
+		clips, err := PersistenceService.RetrieveClipsByRegion(c.Query("t"), d, p, s)
 		if err != nil {
 			clipsError = err.Error()
 		}
@@ -82,6 +87,37 @@ func homeRoutes(_ context.Context, r *gin.Engine) {
 			"Clips":         clips,
 			"ClipsPage":     p + 1,
 			"ClipsPageSize": DefaultPageSize,
+		})
+	})
+
+	r.GET("/alerts", func(c *gin.Context) {
+		target := "alerts.html"
+		if c.GetHeader("HX-Request") == "true" {
+			target = "alerts-list.html"
+		}
+
+		t, e := strconv.Atoi(c.Query("t"))
+		if e != nil {
+			t = DefaultPageSize
+		}
+
+		d, e := strconv.Atoi(c.Query("d"))
+		if e != nil {
+			d = 24 * 60
+		}
+
+		clipsError := ""
+		clips, err := PersistenceService.RetrieveAlertedClips(t, d)
+		if err != nil {
+			clipsError = err.Error()
+		}
+
+		c.HTML(200, target, gin.H{
+			"Tab":         "Home",
+			"ClipsError":  clipsError,
+			"Clips":       clips,
+			"ClipsTop":    t,
+			"ClipsPeriod": d,
 		})
 	})
 

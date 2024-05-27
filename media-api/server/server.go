@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/joho/godotenv"
-
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 
@@ -41,12 +39,6 @@ func Run(canxCtx context.Context, port string) error {
 	// Link up templates and static files
 	r.LoadHTMLGlob("./templates/**/*")
 	r.Static("/static", "./static")
-
-	// Load env vars
-	err := godotenv.Load()
-	if err != nil {
-		return err
-	}
 
 	//=========================
 	// Setup Home ROUTES

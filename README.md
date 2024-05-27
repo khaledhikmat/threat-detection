@@ -81,7 +81,7 @@ To cleanup all resources in `AWS S3`, login to the console portal and cleanup bu
     - `git tag` to make sure is is created.
     - `git push --tags` to push tags to Github.
 - In each microservice folder, perform the following to update the shared library:
-    - `go get -u go get -u github.com/khaledhikmat/threat-detection-shared@v1.0.0`. Replace `v1.0.0` with your actual tag.
+    - `go get -u github.com/khaledhikmat/threat-detection-shared@v1.0.0`. Replace `v1.0.0` with your actual tag.
     - `go mod tidy`
 - `make dockerize`. This buildsand dockerizes all microservices.
 - `make push-2-hub`. This builds, dockerizes and pushes microservice Docker images to a public Docker repo i.e. Docker Hub.
@@ -175,11 +175,10 @@ The `MEDIA_INDEXER_TYPE` specifies the media indexer type while the `INDEXER_TYP
 | `OPEN_SEARCH_INDEX_NAME` | some desc | `<your-index-name>` |
 | `OPEN_SEARCH_USERNAME` | some desc | `<your-master-username>` |
 | `OPEN_SEARCH_PASSWORD` | some desc | `<your-master-password>` |
-| `MEDIA_INDEXER_TYPE` | some desc | `elastic` |
 | `INDEXER_TYPE` | som desc | `opensearch` |
 | `APP_PORT` | som desc | `8080` |
 
-### Alert API
+### Alert Notifier
 
 There can be several deployments of this Microservice so we can invoke all the upstream application we need to notify:
 - `ccure`
@@ -213,6 +212,11 @@ In local mode, SNS topics and SQS queues are automatically created if they do no
 ### OpenSearch Service
 
 A domain (cluster + index) needs to be created ahead of deployment. Some of the env variables below rely on OpenSearch being available.
+
+Domain: `kh-td-opc-open-search`
+
+But actually the domain name should be the index name....so `clips` would have been more appropriate. The domain name does not need to be unique as I originally thought. It seems AWS generates a random number to guarantee uniqueness i.e.:
+`https://clips-63lttw4itao7padfajs4qez3ne.aos.us-east-2.on.aws`
 
 ### Elastic Container Service on FARGATE
 
@@ -843,12 +847,12 @@ The following are the task definitions required to run the solution:
                     "value": "REVIEW"
                 },
                 {
-                    "name": "MEDIA_INDEXER_TYPE",
-                    "value": "elastic"
-                },
-                {
                     "name": "INDEXER_TYPE",
                     "value": "opensearch"
+                },
+                {
+                    "name": "APP_PORT",
+                    "value": "8080"
                 }
             ],
             "environmentFiles": [],

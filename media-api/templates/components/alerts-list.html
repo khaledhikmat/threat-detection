@@ -1,0 +1,13 @@
+{{ range .Clips }}
+<tr>
+    <td>{{ .ID }}</td>
+    <td class="text-center">{{ .Capturer }}</td>
+    <td class="text-center">{{ .Camera }}</td>
+    <td class="text-center">{{ .Region }}</td>
+    <td class="text-center">{{ .Location }}</td>
+    <td class="text-center">{{ .Priority }} </td>
+    <td class="text-center">{{ .Frames }} </td>
+    <td class="text-center">{{ .TagsCount }} </td>
+    <td class="text-center">{{ .AlertsCount }} </td>
+</tr>
+{{ end }}

@@ -52,7 +52,6 @@ func main() {
 
 	// Setup services
 	configSvc = config.New()
-	persistenceSvc = persistence.New(configSvc)
 
 	// Load env vars if running in local rutime mode
 	if configSvc.GetRuntimeEnv() == "local" {
@@ -67,6 +66,8 @@ func main() {
 		fmt.Printf("Failed to start - %s env var is required\n", "APP_PORT")
 		return
 	}
+
+	persistenceSvc = persistence.New(configSvc)
 
 	fn, ok := modeProcs[configSvc.GetRuntimeMode()]
 	if !ok {

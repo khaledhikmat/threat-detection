@@ -95,12 +95,19 @@ func CaptureStream(canxCtx context.Context,
 					file.Close()
 
 					// Send the recording clip via the storage stream
+					num, err := strconv.Atoi(camera.ID)
+					if err != nil {
+						fmt.Printf("capturestream - unable to create a clip %v\n", err)
+						errorsStream <- fmt.Errorf("capturestream: %v", err.Error())
+					}
 					storageStream <- models.RecordingClip{
 						ID:                uuid.NewString(),
+						TimeStamp:         time.Now(),
 						LocalReference:    fmt.Sprintf("%s/%s/%s", configsvc.GetCapturer().RecordingsFolder, camera.Name, file.Name()),
 						CloudReference:    "",
 						Capturer:          capturer,
 						Camera:            camera.Name,
+						CameraID:          num,
 						Region:            camera.Region,
 						Location:          camera.Location,
 						Priority:          camera.Priority,

@@ -106,4 +106,4 @@ apps:
     env:
       APP_PORT: 8089  
       DAPR_PORT: 3509  
-      INDEXER_TYPE: "sqllite"
+      INDEXER_TYPE: "opensearch"
