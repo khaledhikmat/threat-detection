@@ -75,17 +75,17 @@ apps:
       APP_PORT: 8086  
       DAPR_PORT: 3506  
       ALERT_TYPE: "slack" 
-  - appID: threat-detection-database-media-indexer
-    appDirPath: ./media-indexer/
-    appPort: 8087
-    daprHTTPPort: 3507
-    logLevel: debug
-    command: ["go","run", "."]
-    env:
-      APP_PORT: 8087  
-      DAPR_PORT: 3507  
-      MEDIA_INDEXER_TYPE: "database" 
-      INDEXER_TYPE: "sqllite"
+  # - appID: threat-detection-database-media-indexer
+  #   appDirPath: ./media-indexer/
+  #   appPort: 8087
+  #   daprHTTPPort: 3507
+  #   logLevel: debug
+  #   command: ["go","run", "."]
+  #   env:
+  #     APP_PORT: 8087  
+  #     DAPR_PORT: 3507  
+  #     MEDIA_INDEXER_TYPE: "database" 
+  #     INDEXER_TYPE: "sqllite"
   - appID: threat-detection-elastic-media-indexer
     appDirPath: ./media-indexer/
     appPort: 8088

@@ -940,7 +940,7 @@ The following are the services to run the solution:
 - The next problem is that the role that it auto-created to execute the task i.e. `ecsTaskExecutionRole` needs additional permissions to be able to create logs: `ResourceInitializationError: failed to validate logger args: create stream has been retried 1 times: failed to create Cloudwatch log group: AccessDeniedException: User: arn:aws:sts::997763366404:assumed-role/ecsTaskExecutionRole/d7795e52a4434edf80f4923f3b836d9f is not authorized to perform: logs:CreateLogGroup on resource: arn:aws:logs:us-east-2:997763366404:log-group:/ecs/kh-td-poc-ccure-alert-notifier:log-stream: because no identity-based policy allows the logs:CreateLogGroup action status code: 400, request id: 8d35f57a-a92f-4784-9922-ebb27eba0504 : exit status 1`.
 - For now, I attached admin permissions to that role from the IAM console. This seems to have fixed the issue.
 - I could not find a good way to restart a service that failed. I have been reducing the task count to 0, deleting the service and recreating it!! 
-- It is probably better to delay the `kh-td-poc-camera-stream-capturer` service to the end. 
+- When deploying services, it is probably better to start deploying the dependent services. In our case, the order above is pretty good as it dekays deploying `kh-td-poc-camera-stream-capturer` service to the end. 
 
 #### Deployment Notes
 
@@ -952,6 +952,9 @@ Once we got all the tasks running, it was a joy to see how they run together. A 
 - Service Health and metrics is quite useful. It actually shows that we would be stressing the CPU and memory on a single instance.
 - Amazon ECS on Fargate pulls the Docker images for your tasks from the specified container registry (like Docker Hub or Amazon ECR) every time the tasks are started. This includes when tasks are manually stopped and started, when services are updated, and when tasks are automatically restarted due to failures or infrastructure maintenance. This ensures that your tasks are always running the latest version of the image, assuming that you're using the latest tag or another tag that you're updating. If you're using a specific, unchanging tag or image digest, then ECS will always pull and run that specific version of the image.
 - Need to see how to create new revisions when the images get updated.
+- In order to make a task accessible from a browser (i.e. http://<public-address>:8080), you must add inbound rules to the task security group. Here are the two custom TCP rules I added with my host port i.e. 8080:
+
+![Security Group Inboud Rules](./media/security-group.png)
  
 
 
