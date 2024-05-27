@@ -209,14 +209,50 @@ Buckets in S3 are created automatically as needed. There is a bucket for each ca
 
 In local mode, SNS topics and SQS queues are automatically created if they do not exist. So when we deploy to AWS, we expect these resources to be created. 
 
+User needs SNS and SQS full access permissions attached.
+
 ### OpenSearch Service
 
 A domain (cluster + index) needs to be created ahead of deployment. Some of the env variables below rely on OpenSearch being available.
 
 Domain: `kh-td-opc-open-search`
 
-But actually the domain name should be the index name....so `clips` would have been more appropriate. The domain name does not need to be unique as I originally thought. It seems AWS generates a random number to guarantee uniqueness i.e.:
+Please note the following:
+- The domain name should be the index name....so `clips` would have been more appropriate. The domain name does not need to be unique as I originally thought. It seems AWS generates a random number to guarantee uniqueness i.e.:
 `https://clips-63lttw4itao7padfajs4qez3ne.aos.us-east-2.on.aws`
+- Once the domain gets created, the domain security policy must be changed to allow access:
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": {
+        "AWS": "*"
+      },
+      "Action": "es:*",
+      "Resource": "arn:aws:es:us-east-2:997763366404:domain/kh-td-opc-open-search/*"
+    }
+  ]
+}
+```
+
+- Once you want to start exploring data in OpenSearch dashboard, you will to create index pattern. There you decide the field that should be considered as a `timeStamp` field. This allows you to do time-based searches.  
+- Must change the mapping on the `region` field to make it indexable so we can search on it. This can be done by sending a `put` mapping request from OpenSearch dev tool like so:
+
+```json
+PUT /kh-td-opc-open-search/_mapping
+
+{
+  "properties": {
+    "region": {
+      "type": "text",
+      "fielddata": true
+    }
+  }
+}
+```
 
 ### Elastic Container Service on FARGATE
 
