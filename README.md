@@ -811,7 +811,15 @@ The following are the task definitions required to run the solution:
             "name": "media-api",
             "image": "khaledhikmat/threat-detection-media-api:latest",
             "cpu": 0,
-            "portMappings": [],
+            "portMappings": [
+                {
+                    "name": "web",
+                    "containerPort": 8080,
+                    "hostPort": 8080,
+                    "protocol": "tcp",
+                    "appProtocol": "http"
+                }
+            ],
             "essential": true,
             "environment": [
                 {
@@ -941,8 +949,9 @@ Once we got all the tasks running, it was a joy to see how they run together. A 
 - If desired, we can stop tasks in one of two ways:
     - Go to an individual task and stop it. This will force the service to re-create another one because the service has a desired state of 1.
     - Go to the service, drain/set the desired tasks to 0 and update the service. This should not restart new tasks.
-- Need to see how to create new revisions when the images get updated.
 - Service Health and metrics is quite useful. It actually shows that we would be stressing the CPU and memory on a single instance.
+- Amazon ECS on Fargate pulls the Docker images for your tasks from the specified container registry (like Docker Hub or Amazon ECR) every time the tasks are started. This includes when tasks are manually stopped and started, when services are updated, and when tasks are automatically restarted due to failures or infrastructure maintenance. This ensures that your tasks are always running the latest version of the image, assuming that you're using the latest tag or another tag that you're updating. If you're using a specific, unchanging tag or image digest, then ECS will always pull and run that specific version of the image.
+- Need to see how to create new revisions when the images get updated.
  
 
 
