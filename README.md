@@ -305,6 +305,10 @@ The following are the task definitions required to run the solution:
                 {
                     "name": "RUN_TIME_ENV",
                     "value": "REVIEW"
+                },
+                {
+                    "name": "AWS_BUCKET_PREFIX",
+                    "value": "some-threat-detection-proc"
                 }
             ],
             "environmentFiles": [],
@@ -373,6 +377,10 @@ The following are the task definitions required to run the solution:
                 {
                     "name": "AI_MODEL",
                     "value": "weapon"
+                },
+                {
+                    "name": "AWS_BUCKET_PREFIX",
+                    "value": "some-threat-detection-proc"
                 }
             ],
             "environmentFiles": [],
@@ -441,6 +449,10 @@ The following are the task definitions required to run the solution:
                 {
                     "name": "AI_MODEL",
                     "value": "fire"
+                },
+                {
+                    "name": "AWS_BUCKET_PREFIX",
+                    "value": "some-threat-detection-proc"
                 }
             ],
             "environmentFiles": [],
