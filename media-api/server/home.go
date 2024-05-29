@@ -121,6 +121,34 @@ func homeRoutes(_ context.Context, r *gin.Engine) {
 		})
 	})
 
+	r.GET("/clip", func(c *gin.Context) {
+		fmt.Printf("***** 🎥 clip id: %s\n", c.Query("id"))
+		target := "clip.html"
+		if c.Query("id") == "" {
+			c.HTML(200, target, gin.H{
+				"Tab":   "Home",
+				"Error": "Campaign id is missing!",
+			})
+			return
+		}
+
+		clip, err := PersistenceService.RetrieveClipByID(c.Query("id"))
+		if err != nil {
+			c.HTML(200, target, gin.H{
+				"Tab":   "Home",
+				"Error": err.Error(),
+			})
+			return
+		}
+
+		fmt.Printf("***** 🎥 clip id return: %s\n", clip.ID)
+		c.HTML(200, target, gin.H{
+			"Tab":   "Home",
+			"Error": "",
+			"Clip":  clip,
+		})
+	})
+
 	//=========================
 	// ACTIONS
 	//=========================

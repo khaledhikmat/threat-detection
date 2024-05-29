@@ -203,7 +203,22 @@ AWS is the only Cloud vendor we are considering at this time for this solution. 
 
 ### Storage
 
-Buckets in S3 are created automatically as needed. There is a bucket for each camera.
+Buckets in S3 are created automatically as needed. There is a bucket for each camera. To make things easier to watch video in browser, I made buckets accessible publicly by changing bucket permissions to un-block public access and adding a permission policy:
+
+```json
+{
+  "Version":"2012-10-17",
+  "Statement":[
+    {
+      "Sid":"AddPublicReadAccess",
+      "Effect":"Allow",
+      "Principal": "*",
+      "Action":["s3:GetObject"],
+      "Resource":["arn:aws:s3:::your-bucket-name/*"]
+    }
+  ]
+}
+```
 
 ### SQS and SNS
 

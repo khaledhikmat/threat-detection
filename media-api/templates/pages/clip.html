@@ -1,0 +1,48 @@
+<div id="modal-backdrop" class="modal-backdrop fade show" style="display:block;"></div>
+<div id="modal" class="modal fade show" tabindex="-1" style="display:block;">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">{{ .Clip.ID }}</h5>
+            </div>
+            <div class="modal-body">
+                {{ if .Error}}
+                <p class="text-danger">{{ .Error }}</p>
+                {{ end }}
+
+                {{ if eq .Clip.AlertsCount 1}}
+                <p class="text-danger">ALERT</p>
+                {{ end }}
+
+                <table class="table table-striped">
+                    <tr>
+                        <td>Camera</td>
+                        <td><span id="cCamera" class="badge bg-primary">{{ .Clip.Camera }}</span></td>
+                    </tr>
+                    <tr>
+                        <td>REGION</td>
+                        <td><span id="cRegion" class="badge bg-primary">{{ .Clip.Region }}</span></td>
+                    </tr>
+                    <tr>
+                        <td>LOCATION</td>
+                        <td><span id="cLocation" class="badge bg-primary">{{ .Clip.Location }}</span></td>
+                    </tr>
+                </table>
+
+                <video width="450" height="240" controls>
+                    <source src="{{ .Clip.CloudReference }}" type="video/mp4">
+                    Your browser does not support the video tag.
+                </video>
+
+                <div class="clearfix">
+                    <button class="btn btn-secondary btn-sm float-left">Previous clip</button>
+                    <button class="btn btn-warning btn-sm float-right">Next clip</button>
+                </div>
+
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeModal()">close</button>
+            </div>
+        </div>
+    </div>
+</div>

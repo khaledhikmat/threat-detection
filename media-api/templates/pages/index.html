@@ -5,16 +5,6 @@
         <title>Video Threat Detection</title>
     </head>
     <body>
-        <!-- WARNING: Empirically this has to be at the page (not component) level to work -->
-        <!-- <div hx-sse="connect:/actions/stream-events">
-            <div hx-target="#regions-table"
-                hx-swap="innerHTML"
-                hx-trigger="sse:count-update"
-                hx-get="/actions/refresh-regions?d={{ .RegionCurrDays }}"
-                > 
-            </div>
-        </div> -->
-
         <!-- Load every 5 seconds -->
         <div hx-get="/" hx-trigger="every 5s"><div>
 
@@ -55,33 +45,4 @@
             </div>
         </div>
     </body>
-
-    <!-- Need to execute after the page loads -->
-    <!-- <script>
-        const allClipsCount = document.getElementById("allClips");
-        const period1ClipsCount = document.getElementById("period1Clips");
-        const period3ClipsCount = document.getElementById("period3Clips");
-
-        const es = new EventSource("/actions/stream-clips");
-        es.onerror = (err) => {
-            console.log("onerror", err);
-        };
-
-        es.onmessage = (msg) => {
-            console.log("onmessage", msg);
-        };
-
-        es.onopen = (...args) => {
-            console.log("onopen", args);
-        };
-
-        // When a count_update SSE is received, update the counts
-        es.addEventListener("count_update", (event) => {
-            console.log("Received SSE event...", event);
-            const parsedData = JSON.parse(event.data);
-            allClipsCount.innerText = parsedData.data.allClips;
-            period1ClipsCount.innerText = parsedData.data.period1Clips;
-            period3ClipsCount.innerText = parsedData.data.period3Clips;
-        });
-    </script> -->
 </html>

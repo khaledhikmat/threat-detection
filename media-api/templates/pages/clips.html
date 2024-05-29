@@ -4,6 +4,26 @@
         {{ template "meta.html" . }}
         <title>Video Threat Detection</title>
     </head>
+    <script>
+        function closeModal() {
+            var container = document.getElementById("modals-here")
+            var backdrop = document.getElementById("modal-backdrop")
+            var modal = document.getElementById("modal")
+
+            modal.classList.remove("show")
+            backdrop.classList.remove("show")
+
+            setTimeout(function() {
+                container.removeChild(backdrop)
+                container.removeChild(modal)
+            }, 200)
+
+            // Remove all Stripe iFrames
+            // This helps...but does not solve all issues
+            document.querySelectorAll('iframe')
+                .forEach(iframe => iframe.remove());
+        }
+    </script>
 
     <body class="container">
         {{ template "navbar.html" . }}
@@ -19,7 +39,7 @@
                         <table class="table table-striped">
                             <thead>
                                 <tr>
-                                    <td>ID</td>
+                                    <td class="text-center">VIEW</td>
                                     <td class="text-center">CAPTURER</td>
                                     <td class="text-center">CAMERA</td>
                                     <td class="text-center">REGION</td>
@@ -44,5 +64,6 @@
                 </div>
             </div>
         </div>
+        <div id="modals-here"></div>
     </body>
 </html>

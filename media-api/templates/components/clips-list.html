@@ -1,6 +1,15 @@
 {{ range .Clips }}
 <tr>
-    <td>{{ .ID }}</td>
+    <td>
+        <button
+            hx-get="/clip?id={{ .ID }}"
+            hx-target="#modals-here"
+            hx-trigger="click"
+            class="btn btn-success btn-sm"
+            _="on htmx:afterOnLoad wait 10ms then .show to #modal then add .show to #modal-backdrop">
+            View
+        </button>
+    </td>
     <td class="text-center">{{ .Capturer }}</td>
     <td class="text-center">{{ .Camera }}</td>
     <td class="text-center">{{ .Region }}</td>
