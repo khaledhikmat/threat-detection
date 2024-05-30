@@ -283,17 +283,354 @@ PUT /clips/_mapping
 
 #### Useful Queries
 
-Here are some useful queries against OpenSearch to help demonstrate query power. These can be run using the dev tools in OpenSearch management:
+Here are some useful aggregation queries against OpenSearch to help demonstrate query power. These can be run using the dev tools in OpenSearch management:
 
-- Determine the number of records:
+- Match all records and return a single-valued metric aggregation for the sum of all alerts:
+
+*Request*
 
 ```json
-PUT /clips/_mapping
+GET /clips/_search
 {
-  "properties": {
-    "region": {
-      "type": "text",
-      "fielddata": true
+  "query": {
+    "match_all": {}
+  },
+  "size": 0, 
+  "aggs": {
+    "alerts_sum": {
+      "sum": {
+        "field": "alertsCount"
+      }
+    }
+  }
+}
+```
+
+*Response*
+
+```json
+{
+  "took": 5,
+  "timed_out": false,
+  "_shards": {
+    "total": 5,
+    "successful": 5,
+    "skipped": 0,
+    "failed": 0
+  },
+  "hits": {
+    "total": {
+      "value": 12,
+      "relation": "eq"
+    },
+    "max_score": null,
+    "hits": []
+  },
+  "aggregations": {
+    "alerts_sum": {
+      "value": 3
+    }
+  }
+}
+```
+
+- Match documents for `camera1` and return single-valued metric aggregation for the average number of frames:
+
+*Request*
+
+```json
+GET /clips/_search
+{
+  "query": {
+    "match": {
+      "camera": "camera1"
+    }
+  },
+  "size": 0, 
+  "aggs": {
+    "frames_avg": {
+      "avg": {
+        "field": "frames"
+      }
+    }
+  }
+}
+```
+
+*Response*
+
+```json
+{
+  "took": 7,
+  "timed_out": false,
+  "_shards": {
+    "total": 5,
+    "successful": 5,
+    "skipped": 0,
+    "failed": 0
+  },
+  "hits": {
+    "total": {
+      "value": 12,
+      "relation": "eq"
+    },
+    "max_score": null,
+    "hits": []
+  },
+  "aggregations": {
+    "frames_avg": {
+      "value": 122
+    }
+  }
+}
+```
+
+- Match documents for `camera1` and return a multi-valued metric aggregation for model invocation duration:
+
+*Request*
+
+```json
+GET /clips/_search
+{
+  "query": {
+    "match": {
+      "camera": "camera1"
+    }
+  },
+  "size": 0, 
+  "aggs": {
+    "model_Invocation_duration_stats": {
+      "stats": {
+        "field": "modelInvocationDuration"
+      }
+    }
+  }
+}
+```
+
+*Response*
+
+```json
+{
+  "took": 5,
+  "timed_out": false,
+  "_shards": {
+    "total": 5,
+    "successful": 5,
+    "skipped": 0,
+    "failed": 0
+  },
+  "hits": {
+    "total": {
+      "value": 12,
+      "relation": "eq"
+    },
+    "max_score": null,
+    "hits": []
+  },
+  "aggregations": {
+    "model_Invocation_duration_stats": {
+      "count": 12,
+      "min": 869,
+      "max": 5150,
+      "avg": 2655.3333333333335,
+      "sum": 31864
+    }
+  }
+}
+```
+
+- Match documents for `camera1` and return a bucket aggregation for model invocation duration:
+
+*Request*
+
+```json
+GET /clips/_search
+{
+  "query": {
+    "match": {
+      "camera": "camera1"
+    }
+  },
+  "size": 0, 
+  "aggs": {
+    "model_invocation_duration_ranges": {
+      "range": {
+        "field": "modelInvocationDuration",
+        "ranges": [
+            {
+                "from": 0,
+                "to": 1000 
+            },
+            {
+                "from": 1000,
+                "to": 3000 
+            },
+            {
+                "from": 3000,
+                "to": 10000 
+            }
+        ]
+      }
+    }
+  }
+}
+```
+
+*Response*
+
+```json
+{
+  "took": 5,
+  "timed_out": false,
+  "_shards": {
+    "total": 5,
+    "successful": 5,
+    "skipped": 0,
+    "failed": 0
+  },
+  "hits": {
+    "total": {
+      "value": 12,
+      "relation": "eq"
+    },
+    "max_score": null,
+    "hits": []
+  },
+  "aggregations": {
+    "model_Invocation_duration_ranges": {
+      "buckets": [
+        {
+          "key": "0.0-1000.0",
+          "from": 0,
+          "to": 1000,
+          "doc_count": 2
+        },
+        {
+          "key": "1000.0-3000.0",
+          "from": 1000,
+          "to": 3000,
+          "doc_count": 5
+        },
+        {
+          "key": "3000.0-10000.0",
+          "from": 3000,
+          "to": 10000,
+          "doc_count": 5
+        }
+      ]
+    }
+  }
+}
+```
+
+- Match documents for `camera1` and return a bucket aggregation for model invocation duration and then return stats for each bucket:
+
+*Request*
+
+```json
+GET /clips/_search
+{
+  "query": {
+    "match": {
+      "camera": "camera1"
+    }
+  },
+  "size": 0, 
+  "aggs": {
+    "model_Invocation_duration_ranges": {
+      "range": {
+        "field": "modelInvocationDuration",
+        "ranges": [
+            {
+                "from": 0,
+                "to": 1000 
+            },
+            {
+                "from": 1000,
+                "to": 3000 
+            },
+            {
+                "from": 3000,
+                "to": 10000 
+            }
+        ]
+      },
+      "aggs": {
+        "bucket_stats": {
+          "stats": {
+            "field": "modelInvocationDuration"            
+          }
+        }
+      }
+    }
+  }
+}
+```
+
+*Response*
+
+```json
+{
+  "took": 9,
+  "timed_out": false,
+  "_shards": {
+    "total": 5,
+    "successful": 5,
+    "skipped": 0,
+    "failed": 0
+  },
+  "hits": {
+    "total": {
+      "value": 12,
+      "relation": "eq"
+    },
+    "max_score": null,
+    "hits": []
+  },
+  "aggregations": {
+    "model_Invocation_duration_ranges": {
+      "buckets": [
+        {
+          "key": "0.0-1000.0",
+          "from": 0,
+          "to": 1000,
+          "doc_count": 2,
+          "bucket_stats": {
+            "count": 2,
+            "min": 869,
+            "max": 969,
+            "avg": 919,
+            "sum": 1838
+          }
+        },
+        {
+          "key": "1000.0-3000.0",
+          "from": 1000,
+          "to": 3000,
+          "doc_count": 5,
+          "bucket_stats": {
+            "count": 5,
+            "min": 1078,
+            "max": 2933,
+            "avg": 2051.8,
+            "sum": 10259
+          }
+        },
+        {
+          "key": "3000.0-10000.0",
+          "from": 3000,
+          "to": 10000,
+          "doc_count": 5,
+          "bucket_stats": {
+            "count": 5,
+            "min": 3075,
+            "max": 5150,
+            "avg": 3953.4,
+            "sum": 19767
+          }
+        }
+      ]
     }
   }
 }
