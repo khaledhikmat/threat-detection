@@ -281,6 +281,11 @@ PUT /clips/_mapping
 }
 ```
 
+#### Useful Queries
+
+Here are some useful queries against OpenSearch to help demonstrate query power:
+
+
 ### Elastic Container Service on FARGATE
 
 Cluster: `kh-td-poc-ecs-on-fargate`
