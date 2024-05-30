@@ -266,7 +266,7 @@ Please note the following:
 }
 ```
 
-- Once you want to start exploring data in OpenSearch dashboard, you will to create index pattern. There you decide the field that should be considered as a `indexTime` field. This allows you to do time-based searches.  
+- Once you want to start exploring data in OpenSearch dashboard, you will have to create index pattern. There you decide the field that should be considered as a timestamp. In our case, the `indexTime` field is probably a good choice. This allows you to do time-based searches.  
 - Must change the mapping on the `region` field to make it indexable so we can search on it. This can be done by sending a `put` mapping request from OpenSearch dev tool like so:
 
 ```json
