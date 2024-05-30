@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/signal"
 	"strings"
+	"time"
 
 	"github.com/joho/godotenv"
 	"github.com/khaledhikmat/threat-detection-shared/models"
@@ -193,6 +194,7 @@ func processRecordingClip(ctx context.Context, evt models.RecordingClip) error {
 		return fmt.Errorf("Alert processor %s not supported", configSvc.GetSupportedAlertType())
 	}
 
+	evt.AlertInvocationBeginTime = time.Now()
 	err := fn(ctx, evt)
 	if err != nil {
 		fmt.Printf("Alert processor returned an error %s\n", err.Error())

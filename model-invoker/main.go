@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/signal"
 	"strings"
+	"time"
 
 	"github.com/joho/godotenv"
 	"github.com/khaledhikmat/threat-detection-shared/models"
@@ -211,6 +212,7 @@ func processRecordingClip(ctx context.Context, evt models.RecordingClip) error {
 		return fmt.Errorf("AI Model %s not supported", configSvc.GetSupportedAIModel())
 	}
 
+	evt.ModelInvocationBeginTime = time.Now()
 	err := fn(ctx, evt)
 	if err != nil {
 		fmt.Printf("AI Model processor returned an error %s\n", err.Error())

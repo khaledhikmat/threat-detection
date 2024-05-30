@@ -34,12 +34,16 @@ func fire(ctx context.Context, clip models.RecordingClip) error {
 	// Add the tags to the clip
 	clip.Tags = tags
 	clip.TagsCount = len(tags)
+	clip.ModelInvoker = "fire"
 
 	// Check if the tags contain "fire" which means fire was detected
 	if utils.Contains(tags, "fire") {
 		clip.AlertsCount = 1
+		clip.ClipType = 1 // Denote alert type
 		// Publish to the alerts topic
 		fmt.Printf("fire model invoker publishes alert: %s - tags: %d\n", clip.LocalReference, len(clip.Tags))
+		// Indicate the model invocation has ended
+		clip.ModelInvocationEndTime = time.Now()
 		err = pubsubSvc.PublishRecordingClip(ctx, models.ThreatDetectionPubSub, alertsTopic, clip)
 		if err != nil {
 			fmt.Printf("fire model invoker is unable to publish event to the alert topic: %s %v\n", clip.LocalReference, err)
@@ -48,6 +52,9 @@ func fire(ctx context.Context, clip models.RecordingClip) error {
 
 	// Always publish to the metadata topic
 	fmt.Printf("fire model invoker publishes metadata: %s - tags: %d\n", clip.LocalReference, len(clip.Tags))
+	clip.ClipType = 0 // Denote metadata type
+	// Indicate the model invocation has ended
+	clip.ModelInvocationEndTime = time.Now()
 	err = pubsubSvc.PublishRecordingClip(ctx, models.ThreatDetectionPubSub, metadataTopic, clip)
 	if err != nil {
 		fmt.Printf("fire model invoker is unable to publish event to the metadata topic: %s %v\n", clip.LocalReference, err)

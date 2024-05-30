@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/khaledhikmat/threat-detection-shared/models"
 )
@@ -21,6 +22,9 @@ func ccure(ctx context.Context, clip models.RecordingClip) error {
 
 	// TODO: Do invoke ccure and feed it a byte array
 	// TODO: Also....alert to different locations based on time of day
+
+	// Indicate the alert invocation has ended
+	clip.AlertInvocationBeginTime = time.Now()
 
 	return nil
 }

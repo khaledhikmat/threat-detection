@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/khaledhikmat/threat-detection-shared/models"
 )
@@ -20,6 +21,9 @@ func snow(ctx context.Context, clip models.RecordingClip) error {
 		configSvc.GetSupportedAlertType(), clip.CloudReference, len(b), clip.StorageProvider, clip.Capturer, clip.Camera)
 
 	// TODO: Do invoke snow and feed it a byte array
+
+	// Indicate the alert invocation has ended
+	clip.AlertInvocationBeginTime = time.Now()
 
 	return nil
 }

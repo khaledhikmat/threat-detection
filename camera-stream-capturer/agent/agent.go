@@ -222,6 +222,7 @@ func captureRecordingClip(canxCtx context.Context,
 
 				// Publish event
 				fmt.Printf("Publishing %s recording clip\n", recording.CloudReference)
+				recording.PublishTime = time.Now()
 				err = pubsubsvc.PublishRecordingClip(canxCtx, models.ThreatDetectionPubSub, recordingsTopic, recording)
 				if err != nil {
 					fmt.Printf("unable to publish event: %s %v\n", recording.LocalReference, err)
@@ -281,23 +282,29 @@ func produceClip(recordingStream chan models.RecordingClip,
 		return fmt.Errorf("capturestream - unable to create a clip %v", err)
 	}
 	recordingStream <- models.RecordingClip{
-		ID:                uuid.NewString(),
-		TimeStamp:         time.Now(),
-		LocalReference:    destination.Name(),
-		CloudReference:    "",
-		StorageProvider:   configsvc.GetRuntimeMode(),
-		Capturer:          capturer,
-		Camera:            camera.Name,
-		CameraID:          num,
-		Region:            camera.Region,
-		Location:          camera.Location,
-		Priority:          camera.Priority,
-		Analytics:         camera.Analytics,
-		AlertTypes:        camera.AlertTypes,
-		MediaIndexerTypes: camera.MediaIndexerTypes,
-		Frames:            122,
-		BeginTime:         time.Now().Add(-3 * time.Second).Format(models.Layout),
-		EndTime:           time.Now().Format(models.Layout),
+		ID:                       uuid.NewString(),
+		CreateTime:               time.Now(),
+		LocalReference:           destination.Name(),
+		CloudReference:           "",
+		StorageProvider:          configsvc.GetRuntimeMode(),
+		Capturer:                 capturer,
+		Camera:                   camera.Name,
+		CameraID:                 num,
+		Region:                   camera.Region,
+		Location:                 camera.Location,
+		Priority:                 camera.Priority,
+		Analytics:                camera.Analytics,
+		AlertTypes:               camera.AlertTypes,
+		MediaIndexerTypes:        camera.MediaIndexerTypes,
+		Frames:                   122,
+		RecordingBeginTime:       time.Now().Add(-3 * time.Second),
+		RecordingEndTime:         time.Now(),
+		PublishTime:              time.Now(),
+		ModelInvocationBeginTime: time.Now(),
+		ModelInvocationEndTime:   time.Now(),
+		AlertInvocationBeginTime: time.Now(),
+		AlertInvocationEndTime:   time.Now(),
+		IndexTime:                time.Now(),
 	}
 
 	return nil

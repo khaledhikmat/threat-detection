@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/signal"
 	"strings"
+	"time"
 
 	"github.com/joho/godotenv"
 	"github.com/khaledhikmat/threat-detection-shared/models"
@@ -181,6 +182,15 @@ func processRecordingClip(ctx context.Context, evt models.RecordingClip) error {
 
 	fmt.Printf("Processing the clip because our supported index type [%s] is needed\n", configSvc.GetSupportedMediaIndexType())
 
+	// Before we do send off the clip to the media indexer:
+	// Modify the ID to include the model invoker and the type
+	// Record the index time and the duration times
+	evt.ID = fmt.Sprintf("%s-%s-%d", evt.ID, evt.ModelInvoker, evt.ClipType)
+	evt.IndexTime = time.Now()
+	evt.RecordingDuration = evt.RecordingEndTime.Sub(evt.RecordingBeginTime).Milliseconds()
+	evt.ModelInvocationDuration = evt.ModelInvocationEndTime.Sub(evt.ModelInvocationBeginTime).Milliseconds()
+	evt.AlertInvocationDuration = evt.AlertInvocationEndTime.Sub(evt.AlertInvocationBeginTime).Milliseconds()
+	evt.CreateToIndexDuration = evt.IndexTime.Sub(evt.CreateTime).Milliseconds()
 	fn, ok := indexProcs[configSvc.GetSupportedMediaIndexType()]
 	if !ok {
 		fmt.Printf("Index processor %s not supported\n", configSvc.GetSupportedMediaIndexType())

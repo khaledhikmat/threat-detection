@@ -230,12 +230,25 @@ User needs SNS and SQS full access permissions attached.
 
 A domain (cluster + index) needs to be created ahead of deployment. Some of the env variables below rely on OpenSearch being available.
 
-Domain: `kh-td-opc-open-search`
+Domain: `clips`
 
 Please note the following:
-- The domain name should be the index name....so `clips` would have been more appropriate. The domain name does not need to be unique as I originally thought. It seems AWS generates a random number to guarantee uniqueness i.e.:
+- The domain name should be the index name i.e. `clips`. It does not need to be unique as I originally thought. It seems AWS generates a random number to guarantee uniqueness i.e.:
 `https://clips-63lttw4itao7padfajs4qez3ne.aos.us-east-2.on.aws`
-- Once the domain gets created, the domain security policy must be changed to allow access:
+- Domain Creation Method: `Standard Create`
+- Templates: `Dev/Test`
+- Deployment Option: `Domain without standby` 
+- Avalilability Zone: `1-AZ` 
+- Data Nodes: smallest
+- Number of Nodes: 1
+- Storage Type: `EBS`
+- Network: Public Access
+- Dual-stack mode 
+- Enable Fine-grained access control
+- Create Master User
+- Access Policy: configure domain level access policy
+- Visual Editor: Change Action to `Allow` 
+- Once the domain gets created, make sure the domain security policy has `allow` access:
 
 ```json
 {
@@ -247,17 +260,17 @@ Please note the following:
         "AWS": "*"
       },
       "Action": "es:*",
-      "Resource": "arn:aws:es:us-east-2:997763366404:domain/kh-td-opc-open-search/*"
+      "Resource": "arn:aws:es:us-east-2:997763366404:domain/clips/*"
     }
   ]
 }
 ```
 
-- Once you want to start exploring data in OpenSearch dashboard, you will to create index pattern. There you decide the field that should be considered as a `timeStamp` field. This allows you to do time-based searches.  
+- Once you want to start exploring data in OpenSearch dashboard, you will to create index pattern. There you decide the field that should be considered as a `indexTime` field. This allows you to do time-based searches.  
 - Must change the mapping on the `region` field to make it indexable so we can search on it. This can be done by sending a `put` mapping request from OpenSearch dev tool like so:
 
 ```json
-PUT /kh-td-opc-open-search/_mapping
+PUT /clips/_mapping
 
 {
   "properties": {
