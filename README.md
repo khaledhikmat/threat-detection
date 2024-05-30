@@ -283,8 +283,21 @@ PUT /clips/_mapping
 
 #### Useful Queries
 
-Here are some useful queries against OpenSearch to help demonstrate query power:
+Here are some useful queries against OpenSearch to help demonstrate query power. These can be run using the dev tools in OpenSearch management:
 
+- Determine the number of records:
+
+```json
+PUT /clips/_mapping
+{
+  "properties": {
+    "region": {
+      "type": "text",
+      "fielddata": true
+    }
+  }
+}
+```
 
 ### Elastic Container Service on FARGATE
 
