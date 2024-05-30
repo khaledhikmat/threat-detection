@@ -271,7 +271,6 @@ Please note the following:
 
 ```json
 PUT /clips/_mapping
-
 {
   "properties": {
     "region": {
