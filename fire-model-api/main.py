@@ -1,6 +1,7 @@
 import random
 import string
 from dataclasses import dataclass
+from typing import Dict
 
 from fastapi import FastAPI, HTTPException, Response, status
 
@@ -11,10 +12,7 @@ class Detection:
     id: str
     url: str
 
-    def __getitem__(self, key):
-        return getattr(self, key)
-
-detections: dict[str, Detection] = {}
+detections: Dict[str, Detection] = {}
 
 letters = string.ascii_letters
 
