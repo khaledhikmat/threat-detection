@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"os/signal"
@@ -24,6 +25,25 @@ import (
 	"github.com/khaledhikmat/threat-detection-shared/service/pubsub"
 	"github.com/khaledhikmat/threat-detection-shared/service/storage"
 )
+
+type headerRoundTripper struct {
+	Next http.RoundTripper
+}
+
+func (b headerRoundTripper) RoundTrip(r *http.Request) (*http.Response, error) {
+	r.Header.Set("Content-Type", "application/json")
+	return b.Next.RoundTrip(r)
+}
+
+type loggingRoundTripper struct {
+	Next   http.RoundTripper
+	Logger io.Writer
+}
+
+func (b loggingRoundTripper) RoundTrip(r *http.Request) (*http.Response, error) {
+	_, _ = b.Logger.Write([]byte("Request to " + r.URL.String() + "\n"))
+	return b.Next.RoundTrip(r)
+}
 
 var recordingsTopicSubscription = &common.Subscription{
 	PubsubName: models.ThreatDetectionPubSub,

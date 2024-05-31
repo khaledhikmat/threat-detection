@@ -138,6 +138,7 @@ The `AI_MODEL` specifies the type.
 | `AWS_ACCESS_KEY_ID` | some desc | `personal AWS account` |
 | `AWS_SECRET_ACCESS_KEY` | some desc | `personal AWS account` |
 | `AI_MODEL` | some desc | `weapon` |
+| `INVOKER_METHOD` | some desc | `api` |
 
 ### Media Indexer
 
