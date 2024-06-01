@@ -13,6 +13,10 @@ func homeRoutes(_ context.Context, r *gin.Engine) {
 	// PAGES
 	//=========================
 	r.GET("/", func(c *gin.Context) {
+		invocationsCounter.Add(c.Request.Context(), 1)
+		_, span := tracer.Start(c.Request.Context(), "home-route")
+		defer span.End()
+
 		target := "index.html"
 
 		d, e := strconv.Atoi(c.Query("d"))
@@ -24,21 +28,25 @@ func homeRoutes(_ context.Context, r *gin.Engine) {
 		allClips, err := PersistenceService.RetrieveClipCount(24 * 60)
 		if err != nil {
 			regionsError = err.Error()
+			span.RecordError(err)
 		}
 
 		p1Clips, err := PersistenceService.RetrieveClipCount(1 * 60)
 		if err != nil {
 			regionsError = err.Error()
+			span.RecordError(err)
 		}
 
 		p3Clips, err := PersistenceService.RetrieveClipCount(3 * 60)
 		if err != nil {
 			regionsError = err.Error()
+			span.RecordError(err)
 		}
 
 		regions, err := PersistenceService.RetrieveClipsStatsByRegion(d)
 		if err != nil {
 			regionsError = err.Error()
+			span.RecordError(err)
 		}
 
 		c.HTML(200, target, gin.H{
@@ -54,6 +62,10 @@ func homeRoutes(_ context.Context, r *gin.Engine) {
 	})
 
 	r.GET("/clips", func(c *gin.Context) {
+		invocationsCounter.Add(c.Request.Context(), 1)
+		_, span := tracer.Start(c.Request.Context(), "clips-route")
+		defer span.End()
+
 		target := "clips.html"
 		if c.GetHeader("HX-Request") == "true" {
 			target = "clips-list.html"
@@ -78,6 +90,7 @@ func homeRoutes(_ context.Context, r *gin.Engine) {
 		clips, err := PersistenceService.RetrieveClipsByRegion(c.Query("t"), d, p, s)
 		if err != nil {
 			clipsError = err.Error()
+			span.RecordError(err)
 		}
 
 		c.HTML(200, target, gin.H{
@@ -91,6 +104,10 @@ func homeRoutes(_ context.Context, r *gin.Engine) {
 	})
 
 	r.GET("/alerts", func(c *gin.Context) {
+		invocationsCounter.Add(c.Request.Context(), 1)
+		_, span := tracer.Start(c.Request.Context(), "alerts-route")
+		defer span.End()
+
 		target := "alerts.html"
 		if c.GetHeader("HX-Request") == "true" {
 			target = "alerts-list.html"
@@ -110,6 +127,7 @@ func homeRoutes(_ context.Context, r *gin.Engine) {
 		clips, err := PersistenceService.RetrieveAlertedClips(t, d)
 		if err != nil {
 			clipsError = err.Error()
+			span.RecordError(err)
 		}
 
 		c.HTML(200, target, gin.H{
@@ -122,13 +140,18 @@ func homeRoutes(_ context.Context, r *gin.Engine) {
 	})
 
 	r.GET("/clip", func(c *gin.Context) {
+		invocationsCounter.Add(c.Request.Context(), 1)
+		_, span := tracer.Start(c.Request.Context(), "clip-route")
+		defer span.End()
+
 		fmt.Printf("***** 🎥 clip id: %s\n", c.Query("id"))
 		target := "clip.html"
 		if c.Query("id") == "" {
 			c.HTML(200, target, gin.H{
 				"Tab":   "Home",
-				"Error": "Campaign id is missing!",
+				"Error": "Clip id is missing!",
 			})
+			span.RecordError(fmt.Errorf("clip id is missing"))
 			return
 		}
 
@@ -138,6 +161,7 @@ func homeRoutes(_ context.Context, r *gin.Engine) {
 				"Tab":   "Home",
 				"Error": err.Error(),
 			})
+			span.RecordError(err)
 			return
 		}
 

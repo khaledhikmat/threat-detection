@@ -37,9 +37,29 @@ push-2-hub: clean_dist clean_build test build dockerize
 start: clean_dist clean_build test
 	dapr run -f .
 
+start-single: clean_dist clean_build test
+	dapr run -f ./dapr-single.yaml
+
 list: 
 	dapr list
 
 stop: 
-	#./stop-dpar.sh
+	#./stop.sh
 	dapr stop -f . && (lsof -i:8080 | grep main) | awk '{print $2}' | xargs kill && (lsof -i:8081 | grep main) | awk '{print $2}' | xargs kill && (lsof -i:8082 | grep main) | awk '{print $2}' | xargs kill && (lsof -i:8083 | grep main) | awk '{print $2}' | xargs kill && (lsof -i:3000 | grep main) | awk '{print $2}' | xargs kill
+
+stop-single: 
+	#./stop-single.sh
+	dapr stop -f ./dapr-single.yaml && (lsof -i:8080 | grep main) | awk '{print $2}' | xargs kill && (lsof -i:8081 | grep main) | awk '{print $2}' | xargs kill && (lsof -i:8082 | grep main) | awk '{print $2}' | xargs kill && (lsof -i:8083 | grep main) | awk '{print $2}' | xargs kill && (lsof -i:3000 | grep main) | awk '{print $2}' | xargs kill
+
+run-aws-collector:
+	docker run --rm -p 4317:4317 -p 55679:55679 -p 8889:8888 \
+			-e "AWS_ACCESS_KEY_ID=$(AWS_ACCESS_KEY_ID)" \
+			-e "AWS_SECRET_ACCESS_KEY=$(AWS_SECRET_ACCESS_KEY)" \
+			-e "AWS_REGION=$(AWS_REGION)" \
+            -v "${PWD}/telemetry/aws-collector-config.yaml":/otel-local-config.yaml \
+            --name awscollector public.ecr.aws/aws-observability/aws-otel-collector:latest \
+            --config otel-local-config.yaml; \
+
+stop-aws-collector:
+	docker stop $(shell docker ps -aq)
+

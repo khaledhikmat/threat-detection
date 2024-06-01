@@ -11,6 +11,7 @@ import (
 
 	"github.com/khaledhikmat/threat-detection-shared/service/config"
 	"github.com/khaledhikmat/threat-detection-shared/service/persistence"
+	otelprovider "github.com/khaledhikmat/threat-detection-shared/telemetry/provider"
 	"github.com/khaledhikmat/threat-detection/media-api/server"
 )
 
@@ -34,6 +35,22 @@ func main() {
 		fmt.Printf("Failed to start - %s env var is required\n", "APP_PORT")
 		return
 	}
+
+	// Setup Otel
+	optype := otelprovider.AwsOtelProvider
+	if configSvc.GetOtelProvider() == "noop" || configSvc.GetOtelProvider() == "" {
+		optype = otelprovider.NoOp
+	}
+
+	shutdown, err := otelprovider.New(canxCtx, "threat-detection-media-api", otelprovider.WithProviderType(optype))
+	if err != nil {
+		fmt.Println("Failed to start otel", err)
+		return
+	}
+
+	defer func() {
+		_ = shutdown(canxCtx)
+	}()
 
 	persistenceSvc := persistence.New(configSvc)
 

@@ -7,14 +7,32 @@ import (
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/metric"
 
 	"github.com/khaledhikmat/threat-detection-shared/service/config"
 	"github.com/khaledhikmat/threat-detection-shared/service/persistence"
 )
 
+var (
+	tracer             = otel.Tracer("server")
+	meter              = otel.Meter("server")
+	invocationsCounter metric.Int64Counter
+)
+
 const (
 	DefaultPageSize = 10
 )
+
+func init() {
+	var err error
+	invocationsCounter, err = meter.Int64Counter("invocations",
+		metric.WithDescription("The number of server invocations"),
+		metric.WithUnit("1"))
+	if err != nil {
+		fmt.Println("Failed to create invocations counter")
+	}
+}
 
 // Injected DAPR client and other services
 var ConfigService config.IService

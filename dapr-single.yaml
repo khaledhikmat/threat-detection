@@ -1,0 +1,19 @@
+version: 1
+common: # optional section for variables shared across apps
+  resourcesPath: deploy/local/components # any dapr resources to be shared across apps
+  env:  # any environment variable shared across apps
+    DEBUG: true
+    RUN_TIME_ENV: "local"
+    RUN_TIME_MODE: "aws"
+    OTEL_PROVIDER: "aws"
+apps:
+  - appID: threat-detection-media-api
+    appDirPath: ./media-api/
+    appPort: 8089
+    daprHTTPPort: 3509
+    logLevel: debug
+    command: ["go","run", "."]
+    env:
+      APP_PORT: 8089  
+      DAPR_PORT: 3509  
+      INDEXER_TYPE: "opensearch"

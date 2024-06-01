@@ -5,6 +5,7 @@ common: # optional section for variables shared across apps
     DEBUG: true
     RUN_TIME_ENV: "local"
     RUN_TIME_MODE: "aws"
+    OTEL_PROVIDER: "aws"
 apps:
   - appID: threat-detection-camera-stream-capturer
     appDirPath: ./camera-stream-capturer/

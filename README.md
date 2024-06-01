@@ -16,7 +16,7 @@ To drop modules:
 go work edit -dropuse ./alert-notifier 
 ```
 
-## DAPR
+## Run Locally
 
 To run locallY using one terminal session:
 
@@ -114,6 +114,7 @@ The following are the required env variables for each microservice:
 | --- | --- | --- |
 | `RUN_TIME_ENV` | some desc | `local` |
 | `RUN_TIME_MODE` | some desc | `aws` |
+| `OTEL_PROVIDER` | some desc | `aws` |
 | `AWS_ACCESS_KEY_ID` | some desc | `personal AWS account` |
 | `AWS_SECRET_ACCESS_KEY` | some desc | `personal AWS account` |
 | `AGENT_MODE` | some desc | `files` |
@@ -135,6 +136,7 @@ The `AI_MODEL` specifies the type.
 | --- | --- | --- |
 | `RUN_TIME_ENV` | some desc | `local` |
 | `RUN_TIME_MODE` | some desc | `aws` |
+| `OTEL_PROVIDER` | some desc | `aws` |
 | `AWS_ACCESS_KEY_ID` | some desc | `personal AWS account` |
 | `AWS_SECRET_ACCESS_KEY` | some desc | `personal AWS account` |
 | `AI_MODEL` | some desc | `weapon` |
@@ -153,6 +155,7 @@ The `MEDIA_INDEXER_TYPE` specifies the media indexer type while the `INDEXER_TYP
 | --- | --- | --- |
 | `RUN_TIME_ENV` | some desc | `local` |
 | `RUN_TIME_MODE` | some desc | `aws` |
+| `OTEL_PROVIDER` | some desc | `aws` |
 | `AWS_ACCESS_KEY_ID` | some desc | `personal AWS account` |
 | `AWS_SECRET_ACCESS_KEY` | some desc | `personal AWS account` |
 | `SQLLITE_FILE_PATH` | some desc | `/Users/khaled/github/threat-detection/db/clips.db` |
@@ -169,6 +172,7 @@ The `MEDIA_INDEXER_TYPE` specifies the media indexer type while the `INDEXER_TYP
 | --- | --- | --- |
 | `RUN_TIME_ENV` | some desc | `local` |
 | `RUN_TIME_MODE` | some desc | `aws` |
+| `OTEL_PROVIDER` | some desc | `aws` |
 | `AWS_ACCESS_KEY_ID` | some desc | `personal AWS account` |
 | `AWS_SECRET_ACCESS_KEY` | some desc | `personal AWS account` |
 | `SQLLITE_FILE_PATH` | some desc | `/Users/khaled/github/threat-detection/db/clips.db` |
@@ -194,9 +198,60 @@ The `ALERT_TYPE` specifies the type.
 | --- | --- | --- |
 | `RUN_TIME_ENV` | some desc | `local` |
 | `RUN_TIME_MODE` | some desc | `aws` |
+| `OTEL_PROVIDER` | some desc | `aws` |
 | `AWS_ACCESS_KEY_ID` | some desc | `personal AWS account` |
 | `AWS_SECRET_ACCESS_KEY` | some desc | `personal AWS account` |
 | `ALERT_TYPE` | some desc | `snow` |
+
+## Observability
+
+In this POC, we are using [OpenTelemetry](https://opentelemetry.io/) to push traces, metrics and logs to observability backend such as [AWS XRay](https://aws-otel.github.io/) or others. Of course, OpenTelemetry provides many advantages.
+
+OpenTelemetry requires that we have a collector to ingest telemetry signals and export them to different backend systems. If we are running locally, we can run an [AWS Distro OpenTelemetry](https://aws-otel.github.io/) Docker container that acts as a Daemon service for our local microservices.
+
+However, if we are running in ECS, for example, we can inject an AWS collector as a side car in our task definitions.
+
+Let us see how we cn enable OpenTelemery in both environment. 
+
+### Local
+
+Steps to run ADOT collector locally:
+
+- Make sure the following env vars are set:
+
+```bash
+export AWS_REGION="us-east-2"
+export AWS_ACCESS_KEY_ID="<key>"
+export AWS_SECRET_ACCESS_KEY="<key>"
+```
+
+- Check to make sure you see all the env vars above:
+
+```bash
+env
+```
+
+- In one terminal session, run the AWS collector: 
+
+```bash
+make run-aws-collector
+```
+
+- To stop the AWS collector:
+
+```bash
+make stop-aws-collector
+```
+
+**Please note** the AWS collector local configuration file is at `./telemetry/aws-collector-config.yaml`.
+
+### ECS
+
+There are two options:
+- Side Car
+- Daemon service
+
+I opted for side car approach. So the basic idea is that the AWS collector will be added as a side car to every container we deploy. To do this, [task definitions](#task-definitions) configure extra container to run the AWS collector. AWS provides a sample of how to do this [here](https://aws-otel.github.io/docs/setup/ecs/task-definition-for-ecs-fargate). 
 
 ## Deployment
 
@@ -651,11 +706,33 @@ The following are the task definitions required to run the solution:
 {
     "containerDefinitions": [
         {
+          "name": "camera-stream-capturer-aws-otel-collector",
+          "image": "amazon/aws-otel-collector",
+          "command":["--config=/etc/ecs/ecs-default-config.yaml"],
+          "essential": true,
+          "logConfiguration": {
+            "logDriver": "awslogs",
+            "options": {
+                "awslogs-group": "/ecs/kh-td-poc-camera-stream-capturer-aws-collector",
+                "awslogs-region": "us-east-2",
+                "awslogs-stream-prefix": "ecs",
+                "awslogs-create-group": "True"
+            }
+          },
+          "healthCheck": {
+              "command": [ "/healthcheck" ],
+              "interval": 5,
+              "timeout": 6,
+              "retries": 5,
+              "startPeriod": 1
+          }
+        },
+        {
             "name": "camera-stream-capturer",
             "image": "khaledhikmat/threat-detection-camera-stream-capturer:latest",
             "cpu": 0,
             "portMappings": [],
-            "essential": true,
+            "essential": false,
             "environment": [
                 {
                     "name": "AGENT_MODE",
@@ -688,6 +765,10 @@ The following are the task definitions required to run the solution:
                 {
                     "name": "RUN_TIME_ENV",
                     "value": "REVIEW"
+                },
+                {
+                    "name": "OTEL_PROVIDER",
+                    "value": "aws"
                 },
                 {
                     "name": "AWS_BUCKET_PREFIX",
@@ -735,11 +816,33 @@ The following are the task definitions required to run the solution:
 {
     "containerDefinitions": [
         {
+          "name": "weapon-model-invoker-aws-otel-collector",
+          "image": "amazon/aws-otel-collector",
+          "command":["--config=/etc/ecs/ecs-default-config.yaml"],
+          "essential": true,
+          "logConfiguration": {
+            "logDriver": "awslogs",
+            "options": {
+                "awslogs-group": "/ecs/kh-td-poc-weapon-model-invoker-aws-collector",
+                "awslogs-region": "us-east-2",
+                "awslogs-stream-prefix": "ecs",
+                "awslogs-create-group": "True"
+            }
+          },
+          "healthCheck": {
+              "command": [ "/healthcheck" ],
+              "interval": 5,
+              "timeout": 6,
+              "retries": 5,
+              "startPeriod": 1
+          }
+        },
+        {
             "name": "weapon-model-invoker",
             "image": "khaledhikmat/threat-detection-model-invoker:latest",
             "cpu": 0,
             "portMappings": [],
-            "essential": true,
+            "essential": false,
             "environment": [
                 {
                     "name": "AWS_ACCESS_KEY_ID",
@@ -756,6 +859,10 @@ The following are the task definitions required to run the solution:
                 {
                     "name": "RUN_TIME_ENV",
                     "value": "REVIEW"
+                },
+                {
+                    "name": "OTEL_PROVIDER",
+                    "value": "aws"
                 },
                 {
                     "name": "AI_MODEL",
@@ -807,11 +914,33 @@ The following are the task definitions required to run the solution:
 {
     "containerDefinitions": [
         {
+          "name": "fire-model-invoker-aws-otel-collector",
+          "image": "amazon/aws-otel-collector",
+          "command":["--config=/etc/ecs/ecs-default-config.yaml"],
+          "essential": true,
+          "logConfiguration": {
+            "logDriver": "awslogs",
+            "options": {
+                "awslogs-group": "/ecs/kh-td-poc-fire-model-invoker-aws-collector",
+                "awslogs-region": "us-east-2",
+                "awslogs-stream-prefix": "ecs",
+                "awslogs-create-group": "True"
+            }
+          },
+          "healthCheck": {
+              "command": [ "/healthcheck" ],
+              "interval": 5,
+              "timeout": 6,
+              "retries": 5,
+              "startPeriod": 1
+          }
+        },
+        {
             "name": "fire-model-invoker",
             "image": "khaledhikmat/threat-detection-model-invoker:latest",
             "cpu": 0,
             "portMappings": [],
-            "essential": true,
+            "essential": false,
             "environment": [
                 {
                     "name": "AWS_ACCESS_KEY_ID",
@@ -828,6 +957,10 @@ The following are the task definitions required to run the solution:
                 {
                     "name": "RUN_TIME_ENV",
                     "value": "REVIEW"
+                },
+                {
+                    "name": "OTEL_PROVIDER",
+                    "value": "aws"
                 },
                 {
                     "name": "AI_MODEL",
@@ -879,11 +1012,33 @@ The following are the task definitions required to run the solution:
 {
     "containerDefinitions": [
         {
+          "name": "ccure-alert-notifier-aws-otel-collector",
+          "image": "amazon/aws-otel-collector",
+          "command":["--config=/etc/ecs/ecs-default-config.yaml"],
+          "essential": true,
+          "logConfiguration": {
+            "logDriver": "awslogs",
+            "options": {
+                "awslogs-group": "/ecs/kh-td-poc-ccure-alert-notifier-aws-collector",
+                "awslogs-region": "us-east-2",
+                "awslogs-stream-prefix": "ecs",
+                "awslogs-create-group": "True"
+            }
+          },
+          "healthCheck": {
+              "command": [ "/healthcheck" ],
+              "interval": 5,
+              "timeout": 6,
+              "retries": 5,
+              "startPeriod": 1
+          }
+        },
+        {
             "name": "ccure-alert-notifier",
             "image": "khaledhikmat/threat-detection-alert-notifier:latest",
             "cpu": 0,
             "portMappings": [],
-            "essential": true,
+            "essential": false,
             "environment": [
                 {
                     "name": "AWS_ACCESS_KEY_ID",
@@ -900,6 +1055,10 @@ The following are the task definitions required to run the solution:
                 {
                     "name": "RUN_TIME_ENV",
                     "value": "REVIEW"
+                },
+                {
+                    "name": "OTEL_PROVIDER",
+                    "value": "aws"
                 },
                 {
                     "name": "ALERT_TYPE",
@@ -947,11 +1106,33 @@ The following are the task definitions required to run the solution:
 {
     "containerDefinitions": [
         {
+          "name": "snow-alert-notifier-aws-otel-collector",
+          "image": "amazon/aws-otel-collector",
+          "command":["--config=/etc/ecs/ecs-default-config.yaml"],
+          "essential": true,
+          "logConfiguration": {
+            "logDriver": "awslogs",
+            "options": {
+                "awslogs-group": "/ecs/kh-td-poc-snow-alert-notifier-aws-collector",
+                "awslogs-region": "us-east-2",
+                "awslogs-stream-prefix": "ecs",
+                "awslogs-create-group": "True"
+            }
+          },
+          "healthCheck": {
+              "command": [ "/healthcheck" ],
+              "interval": 5,
+              "timeout": 6,
+              "retries": 5,
+              "startPeriod": 1
+          }
+        },
+        {
             "name": "snow-alert-notifier",
             "image": "khaledhikmat/threat-detection-alert-notifier:latest",
             "cpu": 0,
             "portMappings": [],
-            "essential": true,
+            "essential": false,
             "environment": [
                 {
                     "name": "AWS_ACCESS_KEY_ID",
@@ -968,6 +1149,10 @@ The following are the task definitions required to run the solution:
                 {
                     "name": "RUN_TIME_ENV",
                     "value": "REVIEW"
+                },
+                {
+                    "name": "OTEL_PROVIDER",
+                    "value": "aws"
                 },
                 {
                     "name": "ALERT_TYPE",
@@ -1015,11 +1200,33 @@ The following are the task definitions required to run the solution:
 {
     "containerDefinitions": [
         {
+          "name": "pers-alert-notifier-aws-otel-collector",
+          "image": "amazon/aws-otel-collector",
+          "command":["--config=/etc/ecs/ecs-default-config.yaml"],
+          "essential": true,
+          "logConfiguration": {
+            "logDriver": "awslogs",
+            "options": {
+                "awslogs-group": "/ecs/kh-td-poc-pers-alert-notifier-aws-collector",
+                "awslogs-region": "us-east-2",
+                "awslogs-stream-prefix": "ecs",
+                "awslogs-create-group": "True"
+            }
+          },
+          "healthCheck": {
+              "command": [ "/healthcheck" ],
+              "interval": 5,
+              "timeout": 6,
+              "retries": 5,
+              "startPeriod": 1
+          }
+        },
+        {
             "name": "pers-alert-notifier",
             "image": "khaledhikmat/threat-detection-alert-notifier:latest",
             "cpu": 0,
             "portMappings": [],
-            "essential": true,
+            "essential": false,
             "environment": [
                 {
                     "name": "AWS_ACCESS_KEY_ID",
@@ -1036,6 +1243,10 @@ The following are the task definitions required to run the solution:
                 {
                     "name": "RUN_TIME_ENV",
                     "value": "REVIEW"
+                },
+                {
+                    "name": "OTEL_PROVIDER",
+                    "value": "aws"
                 },
                 {
                     "name": "ALERT_TYPE",
@@ -1083,11 +1294,33 @@ The following are the task definitions required to run the solution:
 {
     "containerDefinitions": [
         {
+          "name": "slack-alert-notifier-aws-otel-collector",
+          "image": "amazon/aws-otel-collector",
+          "command":["--config=/etc/ecs/ecs-default-config.yaml"],
+          "essential": true,
+          "logConfiguration": {
+            "logDriver": "awslogs",
+            "options": {
+                "awslogs-group": "/ecs/kh-td-poc-slack-alert-notifier-aws-collector",
+                "awslogs-region": "us-east-2",
+                "awslogs-stream-prefix": "ecs",
+                "awslogs-create-group": "True"
+            }
+          },
+          "healthCheck": {
+              "command": [ "/healthcheck" ],
+              "interval": 5,
+              "timeout": 6,
+              "retries": 5,
+              "startPeriod": 1
+          }
+        },
+        {
             "name": "slack-alert-notifier",
             "image": "khaledhikmat/threat-detection-alert-notifier:latest",
             "cpu": 0,
             "portMappings": [],
-            "essential": true,
+            "essential": false,
             "environment": [
                 {
                     "name": "AWS_ACCESS_KEY_ID",
@@ -1104,6 +1337,10 @@ The following are the task definitions required to run the solution:
                 {
                     "name": "RUN_TIME_ENV",
                     "value": "REVIEW"
+                },
+                {
+                    "name": "OTEL_PROVIDER",
+                    "value": "aws"
                 },
                 {
                     "name": "ALERT_TYPE",
@@ -1151,11 +1388,33 @@ The following are the task definitions required to run the solution:
 {
     "containerDefinitions": [
         {
+          "name": "elastic-media-indexer-aws-otel-collector",
+          "image": "amazon/aws-otel-collector",
+          "command":["--config=/etc/ecs/ecs-default-config.yaml"],
+          "essential": true,
+          "logConfiguration": {
+            "logDriver": "awslogs",
+            "options": {
+                "awslogs-group": "/ecs/kh-td-poc-elastic-media-indexer-aws-collector",
+                "awslogs-region": "us-east-2",
+                "awslogs-stream-prefix": "ecs",
+                "awslogs-create-group": "True"
+            }
+          },
+          "healthCheck": {
+              "command": [ "/healthcheck" ],
+              "interval": 5,
+              "timeout": 6,
+              "retries": 5,
+              "startPeriod": 1
+          }
+        },
+        {
             "name": "elastic-media-indexer",
             "image": "khaledhikmat/threat-detection-media-indexer:latest",
             "cpu": 0,
             "portMappings": [],
-            "essential": true,
+            "essential": false,
             "environment": [
                 {
                     "name": "AWS_ACCESS_KEY_ID",
@@ -1188,6 +1447,10 @@ The following are the task definitions required to run the solution:
                 {
                     "name": "RUN_TIME_ENV",
                     "value": "REVIEW"
+                },
+                {
+                    "name": "OTEL_PROVIDER",
+                    "value": "aws"
                 },
                 {
                     "name": "MEDIA_INDEXER_TYPE",
@@ -1239,6 +1502,28 @@ The following are the task definitions required to run the solution:
 {
     "containerDefinitions": [
         {
+          "name": "media-api-aws-otel-collector",
+          "image": "amazon/aws-otel-collector",
+          "command":["--config=/etc/ecs/ecs-default-config.yaml"],
+          "essential": true,
+          "logConfiguration": {
+            "logDriver": "awslogs",
+            "options": {
+                "awslogs-group": "/ecs/kh-td-poc-media-api-aws-collector",
+                "awslogs-region": "us-east-2",
+                "awslogs-stream-prefix": "ecs",
+                "awslogs-create-group": "True"
+            }
+          },
+          "healthCheck": {
+              "command": [ "/healthcheck" ],
+              "interval": 5,
+              "timeout": 6,
+              "retries": 5,
+              "startPeriod": 1
+          }
+        },
+        {
             "name": "media-api",
             "image": "khaledhikmat/threat-detection-media-api:latest",
             "cpu": 0,
@@ -1251,7 +1536,7 @@ The following are the task definitions required to run the solution:
                     "appProtocol": "http"
                 }
             ],
-            "essential": true,
+            "essential": false,
             "environment": [
                 {
                     "name": "AWS_ACCESS_KEY_ID",
@@ -1284,6 +1569,10 @@ The following are the task definitions required to run the solution:
                 {
                     "name": "RUN_TIME_ENV",
                     "value": "REVIEW"
+                },
+                {
+                    "name": "OTEL_PROVIDER",
+                    "value": "aws"
                 },
                 {
                     "name": "INDEXER_TYPE",
