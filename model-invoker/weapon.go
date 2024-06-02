@@ -149,6 +149,7 @@ func invokeWeaponModelViaAPI(ctx context.Context, clip models.RecordingClip) err
 	if modelResponse.URL != "" {
 		clip.AlertsCount = 1
 		clip.ClipType = 1 // Denote alert type
+		clip.AlertReference = modelResponse.URL
 		// Publish to the alerts topic
 		fmt.Printf("weapon model invoker publishes an alert: %s - tags: %d\n", clip.LocalReference, len(clip.Tags))
 		// Indicate the model invocation has ended

@@ -24,6 +24,7 @@ import (
 	"github.com/khaledhikmat/threat-detection-shared/service/config"
 	"github.com/khaledhikmat/threat-detection-shared/service/pubsub"
 	"github.com/khaledhikmat/threat-detection-shared/service/storage"
+	otelprovider "github.com/khaledhikmat/threat-detection-shared/telemetry/provider"
 )
 
 type headerRoundTripper struct {
@@ -91,13 +92,29 @@ func main() {
 		return
 	}
 
+	// Setup Otel
+	optype := otelprovider.AwsOtelProvider
+	if configSvc.GetOtelProvider() == "noop" || configSvc.GetOtelProvider() == "" {
+		optype = otelprovider.NoOp
+	}
+
+	shutdown, err := otelprovider.New(canxCtx, "threat-detection-media-api", otelprovider.WithProviderType(optype))
+	if err != nil {
+		fmt.Println("Failed to start otel", err)
+		return
+	}
+
+	defer func() {
+		_ = shutdown(canxCtx)
+	}()
+
 	fn, ok := modeProcs[configSvc.GetRuntimeMode()]
 	if !ok {
 		fmt.Printf("Mode processor %s not supported\n", configSvc.GetRuntimeMode())
 		return
 	}
 
-	err := fn(canxCtx)
+	err = fn(canxCtx)
 	if err != nil {
 		fmt.Printf("Failed to start mode processor %s %v\n", configSvc.GetRuntimeMode(), err)
 		return

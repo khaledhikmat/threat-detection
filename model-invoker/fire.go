@@ -96,16 +96,16 @@ func invokeFireModelViaAPI(ctx context.Context, clip models.RecordingClip) error
 		},
 	}
 
-	fireModelRequest := fireModelRequest{
+	modelRequest := fireModelRequest{
 		ID:  clip.ID,
 		URL: clip.CloudReference,
 	}
 
-	fireModelResponse := fireModelResponse{}
+	modelResponse := fireModelResponse{}
 
 	// TODO: Call the API
 	payloadBuf := new(bytes.Buffer)
-	err := json.NewEncoder(payloadBuf).Encode(&fireModelRequest)
+	err := json.NewEncoder(payloadBuf).Encode(&modelRequest)
 	if err != nil {
 		return err
 	}
@@ -130,7 +130,7 @@ func invokeFireModelViaAPI(ctx context.Context, clip models.RecordingClip) error
 		return err
 	}
 
-	err = json.Unmarshal(body, &fireModelResponse)
+	err = json.Unmarshal(body, &modelResponse)
 	if err != nil {
 		return err
 	}
@@ -146,9 +146,10 @@ func invokeFireModelViaAPI(ctx context.Context, clip models.RecordingClip) error
 	clip.ModelInvoker = "fire"
 
 	// Check if the tags contain "fire" which means fire was detected
-	if fireModelResponse.URL != "" {
+	if modelResponse.URL != "" {
 		clip.AlertsCount = 1
 		clip.ClipType = 1 // Denote alert type
+		clip.AlertReference = modelResponse.URL
 		// Publish to the alerts topic
 		fmt.Printf("fire model invoker publishes alert: %s - tags: %d\n", clip.LocalReference, len(clip.Tags))
 		// Indicate the model invocation has ended

@@ -7,15 +7,6 @@ common: # optional section for variables shared across apps
     RUN_TIME_MODE: "aws"
     OTEL_PROVIDER: "aws"
 apps:
-  - appID: threat-detection-camera-stream-capturer
-    appDirPath: ./camera-stream-capturer/
-    appPort: 8080
-    daprHTTPPort: 3500
-    logLevel: debug
-    command: ["go","run", "main.go"]
-    env:
-      APP_PORT: 8080  
-      DAPR_PORT: 3500  
   - appID: threat-detection-weapon-model-invoker
     appDirPath: ./model-invoker/
     appPort: 8081
@@ -26,7 +17,7 @@ apps:
       APP_PORT: 8081  
       DAPR_PORT: 3501  
       AI_MODEL: "weapon" 
-      INVOKER_API: "http://localhost:5001/detections"
+      INVOKER_API: "http://localhost:5001/detections" # make sure the weapon model API is running on this port
   - appID: threat-detection-fire-model-invoker
     appDirPath: ./model-invoker/
     appPort: 8082
@@ -37,7 +28,7 @@ apps:
       APP_PORT: 8082  
       DAPR_PORT: 3502  
       AI_MODEL: "fire" 
-      INVOKER_API: "http://localhost:5002/detections"
+      INVOKER_API: "http://localhost:5002/detections" # make sure the fire model API is running on this port
   - appID: threat-detection-ccure-alert-notifier
     appDirPath: ./alert-notifier/
     appPort: 8083

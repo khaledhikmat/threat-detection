@@ -18,15 +18,30 @@ go work edit -dropuse ./alert-notifier
 
 ## Run Locally
 
-To run locallY using one terminal session:
+To run locally, please make sure that the AWS OTEL collector is running and the model layer API Endpoints are both running:
+
+
+```bash
+docker ps
+```
+
+If they are not running, please run them as the application Micrservices rely on them:
+
+```bash
+make run-aws-collector
+make run-model-apis
+```
+
+To run application layer locally, start all Microservices using DAPR:
 
 ```bash
 make start
 ```
-To stop a locallY running instance using another terminal session:
+
+To stop the application layer locally, stop all Microservices using DAPR:
 
 ```bash
-./stop
+make stop
 ```
 
 **Please note** that I am using DAPR to orchestrate locally. So instead of using something like Docker compose (which requires that I Dockerize everything), DAPR provides an easy way to start all Microservices. This works even if the runtime mode is set to use `aws`.
@@ -140,7 +155,7 @@ The `AI_MODEL` specifies the type.
 | `AWS_ACCESS_KEY_ID` | some desc | `personal AWS account` |
 | `AWS_SECRET_ACCESS_KEY` | some desc | `personal AWS account` |
 | `AI_MODEL` | some desc | `weapon` |
-| `INVOKER_METHOD` | some desc | `api` |
+| `INVOKER_API` | some desc | `http://localhost:5001/detections` |
 
 ### Media Indexer
 
@@ -694,11 +709,189 @@ GET /clips/_search
 
 ### Elastic Container Service on FARGATE
 
-Cluster: `kh-td-poc-ecs-on-fargate`
+We opted to separate the model layer deployment from the application layer deployment because there is a dependency from application layer to model layer. Once we move to Terraform, we sould be able to auto-inject these dependencies.
 
-#### Task Definitions
+#### Model Layer
 
-The following are the task definitions required to run the solution:
+Cluster: `kh-td-poc-model-ecs-on-fargate`
+
+##### Task Definitions
+
+The following are the task definitions required to run the model layer. Please note that each task definition packs two containers: AWS Distro Collector side car and the actual task. The AWS collector is to collect telemetry signals emitted by the application and export them to AWS XRay. Please refer to [observability](#observability) above for more dtails. 
+
+- `kh-td-poc-weapon-model-api`:
+
+```json
+{
+    "containerDefinitions": [
+        {
+          "name": "weapon-model-api-aws-otel-collector",
+          "image": "amazon/aws-otel-collector",
+          "command":["--config=/etc/ecs/ecs-default-config.yaml"],
+          "essential": true,
+          "logConfiguration": {
+            "logDriver": "awslogs",
+            "options": {
+                "awslogs-group": "/ecs/kh-td-poc-weapon-model-api-aws-collector",
+                "awslogs-region": "us-east-2",
+                "awslogs-stream-prefix": "ecs",
+                "awslogs-create-group": "True"
+            }
+          },
+          "healthCheck": {
+              "command": [ "/healthcheck" ],
+              "interval": 5,
+              "timeout": 6,
+              "retries": 5,
+              "startPeriod": 1
+          }
+        },
+        {
+            "name": "weapon-model-api",
+            "image": "khaledhikmat/threat-detection-weapon-model-api:latest",
+            "cpu": 0,
+            "portMappings": [],
+            "essential": false,
+            "environment": [
+                {
+                    "name": "AWS_ACCESS_KEY_ID",
+                    "value": "<your-key>"
+                },
+                {
+                    "name": "AWS_SECRET_ACCESS_KEY",
+                    "value": "<your-key>"
+                }
+            ],
+            "environmentFiles": [],
+            "mountPoints": [],
+            "volumesFrom": [],
+            "ulimits": [],
+            "logConfiguration": {
+                "logDriver": "awslogs",
+                "options": {
+                    "awslogs-create-group": "true",
+                    "awslogs-group": "/ecs/kh-td-poc-weapon-model-api",
+                    "awslogs-region": "us-east-2",
+                    "awslogs-stream-prefix": "ecs"
+                },
+                "secretOptions": []
+            },
+            "systemControls": []
+        }
+    ],
+    "family": "kh-td-poc-weapon-model-api",
+    "taskRoleArn": "arn:aws:iam::997763366404:role/ecsTaskExecutionRole",
+    "executionRoleArn": "arn:aws:iam::997763366404:role/ecsTaskExecutionRole",
+    "networkMode": "awsvpc",
+    "placementConstraints": [],
+    "requiresCompatibilities": [
+        "FARGATE"
+    ],
+    "cpu": "1024",
+    "memory": "3072",
+    "runtimePlatform": {
+        "cpuArchitecture": "X86_64",
+        "operatingSystemFamily": "LINUX"
+    },
+    "tags": []
+}
+```
+
+- `kh-td-poc-fire-model-api`:
+
+```json
+{
+    "containerDefinitions": [
+        {
+          "name": "fire-model-api-aws-otel-collector",
+          "image": "amazon/aws-otel-collector",
+          "command":["--config=/etc/ecs/ecs-default-config.yaml"],
+          "essential": true,
+          "logConfiguration": {
+            "logDriver": "awslogs",
+            "options": {
+                "awslogs-group": "/ecs/kh-td-poc-fire-model-api-aws-collector",
+                "awslogs-region": "us-east-2",
+                "awslogs-stream-prefix": "ecs",
+                "awslogs-create-group": "True"
+            }
+          },
+          "healthCheck": {
+              "command": [ "/healthcheck" ],
+              "interval": 5,
+              "timeout": 6,
+              "retries": 5,
+              "startPeriod": 1
+          }
+        },
+        {
+            "name": "fire-model-api",
+            "image": "khaledhikmat/threat-detection-fire-model-api:latest",
+            "cpu": 0,
+            "portMappings": [],
+            "essential": false,
+            "environment": [
+                {
+                    "name": "AWS_ACCESS_KEY_ID",
+                    "value": "<your-key>"
+                },
+                {
+                    "name": "AWS_SECRET_ACCESS_KEY",
+                    "value": "<your-key>"
+                }
+            ],
+            "environmentFiles": [],
+            "mountPoints": [],
+            "volumesFrom": [],
+            "ulimits": [],
+            "logConfiguration": {
+                "logDriver": "awslogs",
+                "options": {
+                    "awslogs-create-group": "true",
+                    "awslogs-group": "/ecs/kh-td-poc-fire-model-api",
+                    "awslogs-region": "us-east-2",
+                    "awslogs-stream-prefix": "ecs"
+                },
+                "secretOptions": []
+            },
+            "systemControls": []
+        }
+    ],
+    "family": "kh-td-poc-fire-model-api",
+    "taskRoleArn": "arn:aws:iam::997763366404:role/ecsTaskExecutionRole",
+    "executionRoleArn": "arn:aws:iam::997763366404:role/ecsTaskExecutionRole",
+    "networkMode": "awsvpc",
+    "placementConstraints": [],
+    "requiresCompatibilities": [
+        "FARGATE"
+    ],
+    "cpu": "1024",
+    "memory": "3072",
+    "runtimePlatform": {
+        "cpuArchitecture": "X86_64",
+        "operatingSystemFamily": "LINUX"
+    },
+    "tags": []
+}
+```
+##### Model Layer Services
+
+The following are the services to run the model layer:
+
+- `kh-td-poc-weapon-model-api`: 
+    - desired tasks 1
+    - Public IP
+- `kh-td-poc-fire-model-api`: 
+    - desired tasks 1
+    - Public IP
+
+#### Application Layer
+
+Cluster: `kh-td-poc-app-ecs-on-fargate`
+
+##### Task Definitions
+
+The following are the task definitions required to run the application layer. Please note that each task definition packs two containers: AWS Distro Collector side car and the actual task. The AWS collector is to collect telemetry signals emitted by the application and export them to AWS XRay. Please refer to [observability](#observability) above for more dtails. 
 
 - `kh-td-poc-camera-stream-capturer`:
 
@@ -871,6 +1064,10 @@ The following are the task definitions required to run the solution:
                 {
                     "name": "AWS_BUCKET_PREFIX",
                     "value": "some-threat-detection-proc"
+                },
+                {
+                    "name": "INVOKER_API",
+                    "value": "tricky-as-we-need-weapon-model-api-private-ip-endpoint-from-model-layer"
                 }
             ],
             "environmentFiles": [],
@@ -969,6 +1166,10 @@ The following are the task definitions required to run the solution:
                 {
                     "name": "AWS_BUCKET_PREFIX",
                     "value": "some-threat-detection-proc"
+                },
+                {
+                    "name": "INVOKER_API",
+                    "value": "tricky-as-we-need-weapon-model-api-private-ip-endpoint-from-model-layer"
                 }
             ],
             "environmentFiles": [],
@@ -1618,9 +1819,9 @@ The following are the task definitions required to run the solution:
 }
 ```
 
-#### Services
+##### Application Layer Services
 
-The following are the services to run the solution:
+The following are the services to run the application layer:
 
 - `kh-td-poc-ccure-alert-notifier`: 
     - desired tasks 1
