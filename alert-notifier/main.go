@@ -95,7 +95,7 @@ func main() {
 		return
 	}
 
-	err := fn(canxCtx)
+	err = fn(canxCtx)
 	if err != nil {
 		fmt.Printf("Failed to start mode processor %s %v\n", configSvc.GetRuntimeMode(), err)
 		return
