@@ -27,7 +27,7 @@ dockerize: clean_dist clean_build test build
 	docker buildx build --platform linux/amd64 -t khaledhikmat/threat-detection-media-api:latest ./media-api -f ./media-api/Dockerfile
 	docker buildx build --platform linux/amd64 -t khaledhikmat/threat-detection-weapon-model-api:latest ./weapon-model-api -f ./weapon-model-api/Dockerfile
 	docker buildx build --platform linux/amd64 -t khaledhikmat/threat-detection-fire-model-api:latest ./fire-model-api -f ./fire-model-api/Dockerfile
-	#docker buildx build --platform linux/amd64 -t khaledhikmat/threat-detection-iris-model-api:latest ./iris-model-api -f ./iris-model-api/Dockerfile
+	docker buildx build --platform linux/amd64 -t khaledhikmat/threat-detection-iris-model-api:latest ./iris-model-api -f ./iris-model-api/Dockerfile
 
 push-2-hub: clean_dist clean_build test build dockerize
 	docker login
@@ -38,7 +38,7 @@ push-2-hub: clean_dist clean_build test build dockerize
 	docker push khaledhikmat/threat-detection-media-api:latest
 	docker push khaledhikmat/threat-detection-weapon-model-api:latest
 	docker push khaledhikmat/threat-detection-fire-model-api:latest
-	#docker push khaledhikmat/threat-detection-iris-model-api:latest
+	docker push khaledhikmat/threat-detection-iris-model-api:latest
 
 start: clean_dist clean_build test
 	dapr run -f .
