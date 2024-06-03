@@ -27,14 +27,14 @@ for i in range(10):
 """
 @app.get("/ping")
 def ping() -> Response:
-    return Response("Weapon model API is running!!", status_code=status.HTTP_200_OK)
+    return Response("Fire model API is running!!", status_code=status.HTTP_200_OK)
 
 """
-    Detect weapon properties in the file located at the given storage URL
+    Detect fire properties in the file located at the given storage URL
 """
 @app.post("/detections", response_model=Detection)
-def detect_weapon(item: Detection) -> Detection:
-    # TODO: Implement weapon detection logic here
+def detect_fire(item: Detection) -> Detection:
+    # TODO: Implement fire detection logic here
     # For now, just return a random detection
     id = str(random.randint(1, 100))
     if id in detections:
