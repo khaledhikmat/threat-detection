@@ -78,7 +78,9 @@ func main() {
 		optype = otelprovider.NoOp
 	}
 
-	shutdown, err := otelprovider.New(canxCtx, "threat-detection-media-api", otelprovider.WithProviderType(optype))
+	otelServiceName := fmt.Sprintf("threat-detection-%s-alert-notifier", configSvc.GetSupportedAlertType())
+	fmt.Printf("About to start otel with provider %s on service %s\n", optype, otelServiceName)
+	shutdown, err := otelprovider.New(canxCtx, otelServiceName, otelprovider.WithProviderType(optype))
 	if err != nil {
 		fmt.Println("Failed to start otel", err)
 		return

@@ -12,6 +12,7 @@
 
                 {{ if eq .Clip.AlertsCount 1}}
                 <p class="text-danger">ALERT</p>
+                <img src="{{ .Clip.AlertReference }}" width="450" height="240"/>
                 {{ end }}
 
                 <table class="table table-striped">
