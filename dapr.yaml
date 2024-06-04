@@ -30,7 +30,7 @@ apps:
       APP_PORT: 8081  
       DAPR_PORT: 3501  
       AI_MODEL: "weapon" 
-      INVOKER_API: "http://localhost:5001/detections" # make sure the weapon model API is running on this port
+      INVOKER_API: "http://localhost:5003/detections" # make sure the iris model API is running on this port
   - appID: threat-detection-fire-model-invoker
     appDirPath: ./model-invoker/
     appPort: 8082
@@ -41,7 +41,7 @@ apps:
       APP_PORT: 8082  
       DAPR_PORT: 3502  
       AI_MODEL: "fire" 
-      INVOKER_API: "http://localhost:5002/detections" # make sure the fire model API is running on this port
+      INVOKER_API: "http://localhost:5003/detections" # make sure the iris model API is running on this port
   - appID: threat-detection-ccure-alert-notifier
     appDirPath: ./alert-notifier/
     appPort: 8083
