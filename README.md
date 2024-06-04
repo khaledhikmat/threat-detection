@@ -729,6 +729,20 @@ The following are the task definitions required to run the model layer. Please n
           "image": "amazon/aws-otel-collector",
           "command":["--config=/etc/ecs/ecs-default-config.yaml"],
           "essential": true,
+          "environment": [
+              {
+                  "name": "AWS_ACCESS_KEY_ID",
+                  "value": "<your-key>"
+              },
+              {
+                  "name": "AWS_SECRET_ACCESS_KEY",
+                  "value": "<your-key>"
+              },
+              {
+                  "name": "AWS_REGION",
+                  "value": "us-east-2"
+              }
+          ],
           "logConfiguration": {
             "logDriver": "awslogs",
             "options": {
@@ -807,6 +821,20 @@ The following are the task definitions required to run the model layer. Please n
           "image": "amazon/aws-otel-collector",
           "command":["--config=/etc/ecs/ecs-default-config.yaml"],
           "essential": true,
+          "environment": [
+              {
+                  "name": "AWS_ACCESS_KEY_ID",
+                  "value": "<your-key>"
+              },
+              {
+                  "name": "AWS_SECRET_ACCESS_KEY",
+                  "value": "<your-key>"
+              },
+              {
+                  "name": "AWS_REGION",
+                  "value": "us-east-2"
+              }
+          ],
           "logConfiguration": {
             "logDriver": "awslogs",
             "options": {
@@ -903,6 +931,20 @@ The following are the task definitions required to run the application layer. Pl
           "image": "amazon/aws-otel-collector",
           "command":["--config=/etc/ecs/ecs-default-config.yaml"],
           "essential": true,
+          "environment": [
+              {
+                  "name": "AWS_ACCESS_KEY_ID",
+                  "value": "<your-key>"
+              },
+              {
+                  "name": "AWS_SECRET_ACCESS_KEY",
+                  "value": "<your-key>"
+              },
+              {
+                  "name": "AWS_REGION",
+                  "value": "us-east-2"
+              }
+          ],
           "logConfiguration": {
             "logDriver": "awslogs",
             "options": {
@@ -1013,6 +1055,20 @@ The following are the task definitions required to run the application layer. Pl
           "image": "amazon/aws-otel-collector",
           "command":["--config=/etc/ecs/ecs-default-config.yaml"],
           "essential": true,
+          "environment": [
+              {
+                  "name": "AWS_ACCESS_KEY_ID",
+                  "value": "<your-key>"
+              },
+              {
+                  "name": "AWS_SECRET_ACCESS_KEY",
+                  "value": "<your-key>"
+              },
+              {
+                  "name": "AWS_REGION",
+                  "value": "us-east-2"
+              }
+          ],
           "logConfiguration": {
             "logDriver": "awslogs",
             "options": {
@@ -1115,6 +1171,20 @@ The following are the task definitions required to run the application layer. Pl
           "image": "amazon/aws-otel-collector",
           "command":["--config=/etc/ecs/ecs-default-config.yaml"],
           "essential": true,
+          "environment": [
+              {
+                  "name": "AWS_ACCESS_KEY_ID",
+                  "value": "<your-key>"
+              },
+              {
+                  "name": "AWS_SECRET_ACCESS_KEY",
+                  "value": "<your-key>"
+              },
+              {
+                  "name": "AWS_REGION",
+                  "value": "us-east-2"
+              }
+          ],
           "logConfiguration": {
             "logDriver": "awslogs",
             "options": {
@@ -1217,6 +1287,20 @@ The following are the task definitions required to run the application layer. Pl
           "image": "amazon/aws-otel-collector",
           "command":["--config=/etc/ecs/ecs-default-config.yaml"],
           "essential": true,
+          "environment": [
+              {
+                  "name": "AWS_ACCESS_KEY_ID",
+                  "value": "<your-key>"
+              },
+              {
+                  "name": "AWS_SECRET_ACCESS_KEY",
+                  "value": "<your-key>"
+              },
+              {
+                  "name": "AWS_REGION",
+                  "value": "us-east-2"
+              }
+          ],
           "logConfiguration": {
             "logDriver": "awslogs",
             "options": {
@@ -1311,6 +1395,20 @@ The following are the task definitions required to run the application layer. Pl
           "image": "amazon/aws-otel-collector",
           "command":["--config=/etc/ecs/ecs-default-config.yaml"],
           "essential": true,
+          "environment": [
+              {
+                  "name": "AWS_ACCESS_KEY_ID",
+                  "value": "<your-key>"
+              },
+              {
+                  "name": "AWS_SECRET_ACCESS_KEY",
+                  "value": "<your-key>"
+              },
+              {
+                  "name": "AWS_REGION",
+                  "value": "us-east-2"
+              }
+          ],
           "logConfiguration": {
             "logDriver": "awslogs",
             "options": {
@@ -1405,6 +1503,20 @@ The following are the task definitions required to run the application layer. Pl
           "image": "amazon/aws-otel-collector",
           "command":["--config=/etc/ecs/ecs-default-config.yaml"],
           "essential": true,
+          "environment": [
+              {
+                  "name": "AWS_ACCESS_KEY_ID",
+                  "value": "<your-key>"
+              },
+              {
+                  "name": "AWS_SECRET_ACCESS_KEY",
+                  "value": "<your-key>"
+              },
+              {
+                  "name": "AWS_REGION",
+                  "value": "us-east-2"
+              }
+          ],
           "logConfiguration": {
             "logDriver": "awslogs",
             "options": {
@@ -1499,6 +1611,20 @@ The following are the task definitions required to run the application layer. Pl
           "image": "amazon/aws-otel-collector",
           "command":["--config=/etc/ecs/ecs-default-config.yaml"],
           "essential": true,
+          "environment": [
+              {
+                  "name": "AWS_ACCESS_KEY_ID",
+                  "value": "<your-key>"
+              },
+              {
+                  "name": "AWS_SECRET_ACCESS_KEY",
+                  "value": "<your-key>"
+              },
+              {
+                  "name": "AWS_REGION",
+                  "value": "us-east-2"
+              }
+          ],
           "logConfiguration": {
             "logDriver": "awslogs",
             "options": {
@@ -1593,6 +1719,20 @@ The following are the task definitions required to run the application layer. Pl
           "image": "amazon/aws-otel-collector",
           "command":["--config=/etc/ecs/ecs-default-config.yaml"],
           "essential": true,
+          "environment": [
+              {
+                  "name": "AWS_ACCESS_KEY_ID",
+                  "value": "<your-key>"
+              },
+              {
+                  "name": "AWS_SECRET_ACCESS_KEY",
+                  "value": "<your-key>"
+              },
+              {
+                  "name": "AWS_REGION",
+                  "value": "us-east-2"
+              }
+          ],
           "logConfiguration": {
             "logDriver": "awslogs",
             "options": {
@@ -1707,6 +1847,20 @@ The following are the task definitions required to run the application layer. Pl
           "image": "amazon/aws-otel-collector",
           "command":["--config=/etc/ecs/ecs-default-config.yaml"],
           "essential": true,
+          "environment": [
+              {
+                  "name": "AWS_ACCESS_KEY_ID",
+                  "value": "<your-key>"
+              },
+              {
+                  "name": "AWS_SECRET_ACCESS_KEY",
+                  "value": "<your-key>"
+              },
+              {
+                  "name": "AWS_REGION",
+                  "value": "us-east-2"
+              }
+          ],
           "logConfiguration": {
             "logDriver": "awslogs",
             "options": {
