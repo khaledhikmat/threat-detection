@@ -8,7 +8,7 @@ require (
 	github.com/dapr/go-sdk v1.10.1
 	github.com/google/uuid v1.6.0
 	github.com/joho/godotenv v1.5.1
-	github.com/khaledhikmat/threat-detection-shared v1.1.3
+	github.com/khaledhikmat/threat-detection-shared v1.1.5
 	github.com/pion/rtp v1.8.6
 	github.com/yapingcat/gomedia v0.0.0-20240316172424-76660eca7389
 )
