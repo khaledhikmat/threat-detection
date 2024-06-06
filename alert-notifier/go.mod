@@ -5,7 +5,7 @@ go 1.22.2
 require (
 	github.com/dapr/go-sdk v1.10.1
 	github.com/joho/godotenv v1.5.1
-	github.com/khaledhikmat/threat-detection-shared v1.1.3
+	github.com/khaledhikmat/threat-detection-shared v1.1.6
 	github.com/mitchellh/mapstructure v1.5.1-0.20220423185008-bf980b35cac4
 )
 
